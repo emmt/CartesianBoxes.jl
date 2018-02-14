@@ -1,0 +1,16 @@
+# Backup files:
+*~
+.#*
+
+# Binary files:
+*.gz
+*.pdf
+
+# Compiled files:
+*.o
+*.so
+lib*.a
+
+# Temporary directories:
+temp/
+tmp/
