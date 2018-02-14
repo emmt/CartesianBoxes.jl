@@ -1,4 +1,4 @@
-The `BoundingBoxes.jl` package is licensed under the MIT "Expat" License:
+The `CartesianBoxes.jl` package is licensed under the MIT "Expat" License:
 
 > Copyright (C) 2017-2018, Éric Thiébaut.
 >

@@ -4,15 +4,15 @@ This module implements bounding-boxes which are aliases to Cartesian ranges
 and methods to easily construct bounding-boxes and help writing fast
 multi-dimensional algorithms.
 
-A bounding-box is defined by `BoundingBox{N}` and `BoundingBox(args...)`
+A bounding-box is defined by `CartesianBox{N}` and `CartesianBox(args...)`
 are shortcuts for `CartesianRange{CartesianIndex{N}}` and
 `CartesianRange(args...)`.  In addition to the usual ways to build a
 Cartesian range, the following methods are provided:
 
 ```julia
-BoundingBox(A) -> BoundingBox(indices(A))
-BoundingBox((imin,jmin,...), (imax,jmax,...))
-BoundingBox(imin:imax, jmin:jmax, ...)
+CartesianBox(A) -> CartesianBox(indices(A))
+CartesianBox((imin,jmin,...), (imax,jmax,...))
+CartesianBox(imin:imax, jmin:jmax, ...)
 ```
 
 where `A` is an array and `imin`, `imax`, *etc.* are integers.  These
@@ -58,20 +58,20 @@ and scales as `O(length(A))`.
 
 ## Installation
 
-`BoundingBoxes.jl` is not yet an
+`CartesianBoxes.jl` is not yet an
 [official Julia package](https://pkg.julialang.org/) so you have to clone the
 repository to install the package:
 
 ```julia
-Pkg.clone("https://github.com/emmt/BoundingBoxes.jl.git")
+Pkg.clone("https://github.com/emmt/CartesianBoxes.jl.git")
 ```
 
-There is nothing to build so no needs to call `Pkg.build("BoundingBoxes")`.
+There is nothing to build so no needs to call `Pkg.build("CartesianBoxes")`.
 
 Later, it is sufficient to do:
 
 ```julia
-Pkg.update("BoundingBoxes")
+Pkg.update("CartesianBoxes")
 ```
 
 to pull the latest version.
