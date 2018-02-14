@@ -10,7 +10,7 @@ are shortcuts for `CartesianRange{CartesianIndex{N}}` and
 Cartesian range, the following methods are provided:
 
 ```julia
-BoundingBox(A) -> BoundingBox(size(A))
+BoundingBox(A) -> BoundingBox(indices(A))
 BoundingBox((imin,jmin,...), (imax,jmax,...))
 BoundingBox(imin:imax, jmin:jmax, ...)
 ```

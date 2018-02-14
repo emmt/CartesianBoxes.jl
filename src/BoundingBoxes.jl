@@ -26,7 +26,7 @@ export
 to the usual ways to build a Cartesian range, the following methods are
 provided:
 
-    BoundingBox(A) -> BoundingBox(size(A))
+    BoundingBox(A) -> BoundingBox(indices(A))
     BoundingBox((imin,jmin,...), (imax,jmax,...))
     BoundingBox(imin:imax, jmin:jmax, ...)
 
@@ -39,7 +39,7 @@ See also: `boundingbox`[@ref], `CartesianRange`[@ref], `CartesianIndex`[@ref],
 """
 const BoundingBox{N} = CartesianRange{CartesianIndex{N}}
 BoundingBox(args...) = CartesianRange(args...)
-BoundingBox(A::AbstractArray) = CartesianRange(size(A))
+BoundingBox(A::AbstractArray) = CartesianRange(indices(A))
 BoundingBox(start::NTuple{N,Integer}, stop::NTuple{N,Integer}) where {N} =
     CartesianRange(CartesianIndex(start), CartesianIndex(stop))
 BoundingBox(rngs::AbstractUnitRange...) =
