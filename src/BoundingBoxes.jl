@@ -73,7 +73,7 @@ isnonemptypartof(R, S) = false
 
 function isnonemptypartof(R::BoundingBox{N},
                           A::AbstractArray{T,N}) where {T,N}
-    isnonemptypartof(R, CartesianRange(size(A)))
+    isnonemptypartof(R, BoundingBox(A))
 end
 
 function isnonemptypartof(R::BoundingBox{N},
