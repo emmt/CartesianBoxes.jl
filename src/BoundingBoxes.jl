@@ -5,9 +5,10 @@
 #
 #-------------------------------------------------------------------------------
 #
-# Copyright (c) 2017 Éric Thiébaut.
+# This file is part of the `BoundingBoxes.jl` package which is licensed under
+# the MIT "Expat" License.
 #
-# All rights reserved.
+# Copyright (c) 2017 Éric Thiébaut.
 #
 
 module BoundingBoxes
