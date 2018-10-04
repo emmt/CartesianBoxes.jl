@@ -1,8 +1,8 @@
 # Simple and efficient Cartesian boxes in Julia
 
-[![Build Status](https://img.shields.io/travis/emmt/CartesianBoxes.jl.svg?style=flat-square&label=linux)](https://travis-ci.org/emmt/CartesianBoxes.jl)
-[![Build status](https://img.shields.io/appveyor/ci/emmt/CartesianBoxes-jl.svg?style=flat-square&label=windows)](https://ci.appveyor.com/project/emmt/CartesianBoxes-jl/branch/master)
-[![Coverage Status](http://img.shields.io/coveralls/emmt/CartesianBoxes.jl.svg?style=flat-square)](https://coveralls.io/r/emmt/CartesianBoxes.jl?branch=master)
+[![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
+[![Build Status](https://travis-ci.org/emmt/CartesianBoxes.jl.svg?branch=master)](https://travis-ci.org/emmt/CartesianBoxes.jl)
+[![Coverage Status](https://coveralls.io/repos/emmt/CartesianBoxes.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/emmt/CartesianBoxes.jl?branch=master)
 
 
 This module implements rectangular regions of `N`-dimensional indices which are
