@@ -45,10 +45,8 @@ end
 
 """
 
-`CartesianBox{N}` and `CartesianBox(args...)` are shortcuts for
-`CartesianRange{CartesianIndex{N}}` and `CartesianRange(args...)`.  In addition
-to the usual ways to build a Cartesian range, the following constructors are
-provided:
+`CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
+can be constructed by:
 
 ```julia
 CartesianBox(A)
@@ -57,14 +55,28 @@ CartesianBox(CartesianIndex(imin,jmin,...), CartesianIndex(imax,jmax,...))
 CartesianBox((imin:imax, jmin:jmax, ...))
 ```
 
-where `A` is an array and `imin`, `imax`, etc. are integers.  An instance of
-`CartesianBox` can also be constructed from an instance of `CartesianIndices`
-and, for Julia version ≤ 0.6, from an instance of `CartesianRange`.
+where `A` is an array (to define a region consisting in all the indices in the
+array), `imin`, `imax`, etc. are integers (to define a region from
+`(imin,jmin,...)` to `(imax,jmax,...)`.
 
-To use an instance of `CartesianBox{N}` in a loop
+An instance of `CartesianBox` can also be constructed from an instance of
+`CartesianIndices` and, for Julia version ≤ 0.6, from an instance of
+`CartesianRange`.
 
-See also: `boundingbox`[@ref], `CartesianIndices`[@ref],
-`CartesianRange`[@ref], `CartesianIndex`[@ref], `intersection`[@ref].
+An instance of `CartesianBox` can be used in a loop as follows:
+
+```julia
+B = CartesianBox(...)
+for i in B
+   A[i] = ...
+end
+```
+
+where `i` will be set to a `CartesianIndex` with all the multi-dimensional
+indices of the rectangular region defined by `B`.
+
+See also: [`boundingbox`](@ref), [`CartesianIndices`](@ref),
+[`CartesianRange`](@ref), [`CartesianIndex`](@ref), [`intersection`](@ref).
 
 """
 struct CartesianBox{N}
@@ -104,10 +116,12 @@ _dimensionlength(first::Int, last::Int) = max(0, last - first + 1)
 """
 
 `CartesianBoxable{N}` is a union of types (other than `CartesianBox{N}`) which
-can be automatically converted into a `CartesianBox{N}`.  Although the
-constructor `CartesianBox` can be also applied to any instance of
-`AbstractArray`, this abstract type does not belong to this union as it is
-considered that such a conversion cannot be automatic.
+can be automatically converted into a `CartesianBox{N}`.
+
+*Remarks:* Although the constructor `CartesianBox` can be also applied to any
+instance of `AbstractArray`, this abstract type does not belong to the union
+`CartesianBoxable` as it is considered that such a conversion cannot be
+automatic.
 
 """
 CartesianBoxable
@@ -181,7 +195,7 @@ defined by `R` and `S`.  This method is similar to `intersect(R,S) = R ∩ S`
 which yields an array of Cartesian indices and is **much** slower (and less
 useful).
 
-See also: `CartesianBox`[@ref], `isnonemptypartof`[@ref].
+See also: [`CartesianBox`](@ref), [`isnonemptypartof`](@ref).
 
 """
 intersection(R::CartesianBox{N}, S::CartesianBox{N}) where {N} =
@@ -234,7 +248,7 @@ sub-region `B` of `A` (`B` can be a `CartesianBox`, a `CartesianIndices`, a
 FIXME: The algorithm is pretty silly for now and could be made faster than
        `O(length(A))`.
 
-See also: [`CartesianBox`[@ref], [`intersection`](@ref), [`isnonzero`](@ref).
+See also: [`CartesianBox`](@ref), [`intersection`](@ref), [`isnonzero`](@ref).
 
 """
 boundingbox(A::AbstractArray{Bool,N}) where {N} = boundingbox(identity, A)

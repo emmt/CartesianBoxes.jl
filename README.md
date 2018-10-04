@@ -12,7 +12,9 @@ are as fast as `CartesianIndices{N}` or as `CartesianRange{CardinalIndex{N}}`
 *portable* replacement (see [*Rationale*](#rationale) below) of these different
 representations of rectangular multi-dimensional regions.
 
-A bounding-box is created by calling the constructor `CartesianBox(args...)` with one of the following forms:
+A bounding-box is created by calling the constructor `CartesianBox(args...)`
+with one of the following forms:
+
 ```julia
 CartesianBox(A)
 CartesianBox(axes(A))
@@ -29,6 +31,18 @@ can be abbreviated by just specifying `k`.  However beware that a tuple of
 integers is interpreted as a list of dimensions similar to `(1:dim1, 1:dim2,
 ...)`.  There is the same ambiguity in the constructors of `CartesianIndices`
 and of `CartesianRange`.
+
+An instance of `CartesianBox` can be used in a loop as follows:
+
+```julia
+B = CartesianBox(...)
+for i in B
+   A[i] = ...
+end
+```
+
+where `i` will be set to a `CartesianIndex` with all the multi-dimensional
+indices of the rectangular region defined by `B`.
 
 The call:
 
