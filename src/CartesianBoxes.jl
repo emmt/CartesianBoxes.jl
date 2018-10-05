@@ -266,10 +266,11 @@ end
 
 function boundingbox(predicate::Function,
                      A::AbstractArray{T,N}) where {T,N}
-    Imin = CartesianIndex(ntuple(i -> typemax(Int), Val(N)))
-    Imax = CartesianIndex(ntuple(i -> typemin(Int), Val(N)))
+    inds = axes(A)
+    Imin = CartesianIndex(map(r -> last(r) + 1, inds))
+    Imax = CartesianIndex(map(r -> first(r) - 1, inds))
     @inbounds for I in CartesianBox(A)
-        if predicate(A[i])
+        if predicate(A[I])
             Imin = min(Imin, I)
             Imax = max(Imax, I)
         end
@@ -280,10 +281,12 @@ end
 function boundingbox(predicate::Function,
                      A::AbstractArray{T,N},
                      B::CartesianBox{N}) where {T,N}
-    Imin = CartesianIndex(ntuple(i -> typemax(Int), Val(N)))
-    Imax = CartesianIndex(ntuple(i -> typemin(Int), Val(N)))
-    @inbounds for I in intersection(A, B)
-        if predicate(A[i])
+    R = intersection(CartesianBox(A), B)
+    inds = axes(R)
+    Imin = CartesianIndex(map(r -> last(r) + 1, inds))
+    Imax = CartesianIndex(map(r -> first(r) - 1, inds))
+    @inbounds for I in R
+        if predicate(A[I])
             Imin = min(Imin, I)
             Imax = max(Imax, I)
         end

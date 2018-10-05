@@ -1,5 +1,5 @@
 
-if ! isdefined(Base, :CartesianBoxes)
+if ! isdefined(Main, :CartesianBoxes)
     include(joinpath("..", "src", "CartesianBoxes.jl"))
 end
 
@@ -122,7 +122,21 @@ for op in (:_add, :_sub, :_mul, :_div)
 end
 
 maxabsdif(A, B) = maximum(abs.(A .- B))
+fillpart!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
+    fillpart!(A, B, convert(T, x))
+function fillpart!(A::AbstractArray{T,N},
+                   B::CartesianBox{N}, x::T) where {T,N}
+    if ! isempty(B)
+        isnonemptypartof(B, A) ||
+            throw(BoundsError("sub-region is not part of array"))
+        @inbounds @simd for i in B
+            A[i] = x
+        end
+    end
+    return A
+end
 
+# This method is to exercise the loop and check the computed length.
 function stupidcount(iter)
     n = 0
     for i in iter
@@ -131,12 +145,12 @@ function stupidcount(iter)
     return n
 end
 
-SIZES = (345, (21,22), (11,12,13), (5,6,7,8))
+SIZES = ((), (345,), (21,22), (11,12,13), (5,6,7,8))
 TYPES = (Float64, Float32)
 
 @testset "CartesianBoxes" begin
     @testset "Basic operations" for dims in SIZES, T in TYPES
-        A = Array{T}(undef, dims...)
+        A = Array{T}(undef, dims)
         r = CartesianIndices(A)
         b = CartesianBox(A)
         @test ndims(b) == ndims(r)
@@ -160,11 +174,11 @@ TYPES = (Float64, Float32)
     end
 
     @testset "Array indexing" for dims in SIZES, T in TYPES
-        A = randn(T, dims...)
-        B = randn(T, dims...)
-        C1 = Array{T}(undef, dims...)
-        C2 = Array{T}(undef, dims...)
-        C3 = Array{T}(undef, dims...)
+        A = randn(T, dims)
+        B = randn(T, dims)
+        C1 = Array{T}(undef, dims)
+        C2 = Array{T}(undef, dims)
+        C3 = Array{T}(undef, dims)
 
         @testset "Operation $oper" for oper in (slow_add!, slow_sub!,
                                                 slow_mul!)
@@ -194,6 +208,18 @@ TYPES = (Float64, Float32)
             end
          end
     end
+
+    @testset "Array functions" for dims in SIZES, T in (TYPES..., Bool)
+        A = rand([zero(T), one(T)], dims)
+        if ndims(A) != 0
+            B = boundingbox(A)
+            fillpart!(A, B, zero(T))
+            C = boundingbox(A)
+            @test isempty(C)
+            @test length(C) == 0
+        end
+    end
+
 end
 
 end # module
