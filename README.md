@@ -1,4 +1,4 @@
-# Simple and efficient Cartesian boxes in Julia
+# Flexible and efficicient multi-dimensional index boxes in Julia
 
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Build Status](https://travis-ci.org/emmt/CartesianBoxes.jl.svg?branch=master)](https://travis-ci.org/emmt/CartesianBoxes.jl)
@@ -55,10 +55,9 @@ CartesianBox((dim1, dim2, ...))
 ```
 
 Note that index ranges like `k:k` can be abbreviated by just specifying `k`.
-However beware that a tuple of integers, say `(n1,n2,...)` is interpreted as a
-list of dimensions hence as if `(1:n1, 1:n2, ...)` as been specified.  There is
-the same ambiguity in the constructors of `CartesianIndices` and of
-`CartesianRange`.
+However, a tuple of integers, say `(n1,n2,...)`, is interpreted as a list of
+dimensions, as if `(1:n1, 1:n2, ...)` as been specified.  There is the same
+ambiguity in the constructors of `CartesianIndices` and of `CartesianRange`.
 
 Finally, it is possible to convert an instance, say `R`, of `CartesianIndices`
 or an instance of `CartesianRange` into a `CartesianBox`:
@@ -67,7 +66,7 @@ or an instance of `CartesianRange` into a `CartesianBox`:
 B = CartesianBox(R)
 ```
 
-The reverse operation is also possible `CartesianIndices(B)` and
+The reverse operation is also possible, `CartesianIndices(B)` and
 `CartesianRange(B)` work as expected.
 
 
