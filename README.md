@@ -6,32 +6,72 @@
 [![Coverage Status](https://coveralls.io/repos/github/emmt/CartesianBoxes.jl/badge.svg?branch=master)](https://coveralls.io/github/emmt/CartesianBoxes.jl?branch=master)
 [![codecov.io](http://codecov.io/github/emmt/CartesianBoxes.jl/coverage.svg?branch=master)](http://codecov.io/github/emmt/CartesianBoxes.jl?branch=master)
 
-This module implements rectangular regions of `N`-dimensional indices which are
-instances of `CartesianBox{N}`.  For multi-dimensional loops, these instances
-are as fast as `CartesianIndices{N}` or as `CartesianRange{CardinalIndex{N}}`
-(depending on your version of Julia).  They can thus be used as a *fast* and
-*portable* replacement (see [*Rationale*](#rationale) below) of these different
-representations of rectangular multi-dimensional regions.
+This module implements `CartesianBox{N}` to define rectangular regions of
+`N`-dimensional indices in Julia arrays.  Cartesian boxes are similar to
+`CartesianIndices` or, for Julia version ≤ 0.6, to `CartesianRange` but, being
+a different type, they can be used to specifically extend methods without
+introducing unexpected behaviors in other Julia modules.
 
-A bounding-box is created by calling the constructor `CartesianBox(args...)`
-with one of the following forms:
+For multi-dimensional loops, instances of `CartesianBox{N}` are as fast as
+`CartesianIndices{N}` or as `CartesianRange{CardinalIndex{N}}`.  They can thus
+be used as a *fast* and *portable* replacement (see [*Rationale*](#rationale)
+below) of these different representations of rectangular multi-dimensional
+regions.
+
+
+## Usage
+
+### Construction
+
+A Cartesian box is created by calling the constructor `CartesianBox(args...)`
+with a variety of arguments.  For instance:
 
 ```julia
 CartesianBox(A)
-CartesianBox(axes(A))
-CartesianBox(CartesianIndex(imin,jmin,...), CartesianIndex(imax,jmax,...))
-CartesianBox((imin:imax, jmin:jmax, ...))
-CartesianBox((dim1, dim2, ...))
-CartesianBox(R)
 ```
 
-where `A` is an array, `imin`, `imax`, ... are integers, `dim1`, `dim2`,
-... are integer dimension lenghts, `R` is an instance of `CartesianIndices` or,
-on Julia ≤ 0.6, an instance of `CartesianRange`.  Note that ranges like `k:k`
-can be abbreviated by just specifying `k`.  However beware that a tuple of
-integers is interpreted as a list of dimensions similar to `(1:dim1, 1:dim2,
-...)`.  There is the same ambiguity in the constructors of `CartesianIndices`
-and of `CartesianRange`.
+yields the Cartesian box which contains all indices of array `A`.  An arbitrary
+region whose first an last multi-dimensional indices are `(imin,jmin,...)` and
+`(imax,jmax,...)` can be defined by one of the following calls:
+
+```julia
+CartesianBox(CartesianIndex(imin,jmin,...), CartesianIndex(imax,jmax,...))
+CartesianBox((imin:imax, jmin:jmax, ...))
+```
+
+hence
+
+```julia
+CartesianBox(axes(A))
+```
+
+also defines a Cartesian box encompassing all indices of array `A`.  For normal
+arrays (with 1-based indices), it is sufficient to provide the dimensions of
+the array:
+
+```julia
+CartesianBox(size(A))
+CartesianBox((dim1, dim2, ...))
+```
+
+Note that index ranges like `k:k` can be abbreviated by just specifying `k`.
+However beware that a tuple of integers, say `(n1,n2,...)` is interpreted as a
+list of dimensions hence as if `(1:n1, 1:n2, ...)` as been specified.  There is
+the same ambiguity in the constructors of `CartesianIndices` and of
+`CartesianRange`.
+
+Finally, it is possible to convert an instance, say `R`, of `CartesianIndices`
+or an instance of `CartesianRange` into a `CartesianBox`:
+
+```julia
+B = CartesianBox(R)
+```
+
+The reverse operation is also possible `CartesianIndices(B)` and
+`CartesianRange(B)` work as expected.
+
+
+### Fast iterations
 
 An instance of `CartesianBox` can be used in a loop as follows:
 
@@ -43,7 +83,51 @@ end
 ```
 
 where `i` will be set to a `CartesianIndex` with all the multi-dimensional
-indices of the rectangular region defined by `B`.
+indices of the rectangular region defined by `B`.  To benefit from faster loops
+you may suppress bound checking and activate
+[SIMD](https://fr.wikipedia.org/wiki/Single_instruction_multiple_data)
+vectorization:
+
+```julia
+B = CartesianBox(...)
+@inbounds @simd for i in B
+   A[i] = ...
+end
+```
+
+### Indexation and views
+
+You may extract the region defined by a Cartesian box `B` from an array `A`
+by calling:
+
+```julia
+C = A[B]
+```
+
+Setting values is also possible with
+
+```julia
+A[B] = C
+```
+
+where `C` is an array of same dimensions as the region defined by `B`.  To fill
+the region `B` of array `A` with a scalar `x`, just do:
+
+```julia
+fill!(A, B, x) -> A
+```
+
+A *view* can be created by:
+
+```julia
+V = view(A, B)
+```
+
+which yields a sub-array `V` sharing its elements with `A` in the region
+defined by `B`.
+
+
+### Methods
 
 The call:
 
@@ -51,10 +135,10 @@ The call:
 intersection(R, S)
 ```
 
-yields the bounding-box (as a `CartesianBox`) which is the intersection of the
-two regions defined by `R` and `S`.  This method is similar to `intersect(R,S)
-= R ∩ S` which yields an array of Cartesian indices and is **much** slower (and
-hence less useful).
+yields the Cartesian box which is the intersection of the Cartesian regions
+defined by `R` and `S`.  This method is similar to `intersect(R,S) = R ∩ S`
+which yields an array of Cartesian indices and is **much** slower (and hence
+less useful).
 
 The call:
 
@@ -62,9 +146,15 @@ The call:
 isnonemptypartof(R, S)
 ```
 
-yields whether region `R` is nonempty and a valid part of `S`.  If `R` is a
-Cartesian range, then `S` can be an array to check whether `R` is a valid
-nonempty region of interest of `S`.
+yields whether the region defined by `R` is nonempty and a valid part of the
+region defined by `S` or of the contents of `S` if it is an array.  If this
+method returns `false`, you may call:
+
+```julia
+isempty(R)
+```
+
+to check whether `R` was empty.
 
 The call:
 
@@ -82,8 +172,10 @@ sub-region `B` of `A` (`B` can be a `CartesianBox`, a `CartesianIndices`, a
 
 ## Restrictions
 
-The algorithm for finding the bounding-box of valid values is pretty simple
-and scales as `O(length(A))`.
+* The algorithm for finding the bounding-box of valid values is pretty simple
+  and scales as `O(length(A))`.
+
+* There is no way to define an *empty* Cartesian box when `N=0`.
 
 
 ## Installation
@@ -132,6 +224,6 @@ is that this is because [Compat](https://github.com/JuliaLang/Compat.jl) does
 not extend `simd_outer_range()`, `simd_inner_length()` nor `simd_index()`
 methods for `CartesianIndices{N}`.
 
-Another issue is that, I was not quite satisfied with the API and wanted to add
-functionalities but did not want to interfere with those implemented by
-`CartesianIndices` or `CartesianRange`.
+Another motivation for this module, was that I wanted to add some
+functionalities in a such a way that is does not interfere with how
+`CartesianIndices` or `CartesianRange` are used by others.
