@@ -1,6 +1,4 @@
-#if ! isdefined(Main, :CartesianBoxes)
-#    include(joinpath("..", "src", "CartesianBoxes.jl"))
-#end
+# isdefined(Main, :CartesianBoxes) || include("../src/CartesianBoxes.jl")
 
 module CartesianBoxesTests
 
@@ -203,8 +201,7 @@ TYPES = (Float64, Float32)
         C = boundingbox(A)
         @test isempty(C)
         @test length(C) == 0
-        inds = map(r -> first(r)+1:last(r)-1, axes(A))
-        B = CartesianBox(inds)
+        B = CartesianBox(map(r -> first(r)+1:last(r)-1, axes(A)))
         C = CartesianBox(map(r -> first(r)+2:last(r)-2, axes(A)))
         fill!(A, zero(T))
         fill!(A, B, one(T))
@@ -219,11 +216,24 @@ TYPES = (Float64, Float32)
             @test all(map(isequal, A[C], X))
             @test boundingbox(x -> x != zero(T) && x < typemax(T), A) == C
             @test boundingbox(x -> x != typemax(T), A, B) == C
+            inds = axes(B)
+            @test boundingbox(x -> x != typemax(T), A, inds) == C
             V = view(A,C)
             @test all(map(isequal, V, X))
+            # Indices starting at 1.
+            @. A = randn(T)
+            inds = map(r -> first(r):last(r)-1, axes(A))
+            B = CartesianBox(inds)
+            @test maxabsdif(A[inds...], A[B]) == 0
         end
     end
 
+    @testset "Miscellaneous" begin
+        B = CartesianBox((1:3, -7:6))
+        @test eachindex(IndexCartesian(), B) == B
+        Z = CartesianBox(())
+        @test stupidcount(Z) == 1
+    end
 end
 
 end # module
