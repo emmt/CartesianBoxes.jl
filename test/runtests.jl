@@ -1,7 +1,6 @@
-
-if ! isdefined(Main, :CartesianBoxes)
-    include(joinpath("..", "src", "CartesianBoxes.jl"))
-end
+#if ! isdefined(Main, :CartesianBoxes)
+#    include(joinpath("..", "src", "CartesianBoxes.jl"))
+#end
 
 module CartesianBoxesTests
 
@@ -122,19 +121,6 @@ for op in (:_add, :_sub, :_mul, :_div)
 end
 
 maxabsdif(A, B) = maximum(abs.(A .- B))
-fillpart!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
-    fillpart!(A, B, convert(T, x))
-function fillpart!(A::AbstractArray{T,N},
-                   B::CartesianBox{N}, x::T) where {T,N}
-    if ! isempty(B)
-        isnonemptypartof(B, A) ||
-            throw(BoundsError("sub-region is not part of array"))
-        @inbounds @simd for i in B
-            A[i] = x
-        end
-    end
-    return A
-end
 
 # This method is to exercise the loop and check the computed length.
 function stupidcount(iter)
@@ -209,14 +195,32 @@ TYPES = (Float64, Float32)
          end
     end
 
-    @testset "Array functions" for dims in SIZES, T in (TYPES..., Bool)
+    # FIXME: for now, we skip tests with ndims = 0
+    @testset "Array functions" for dims in SIZES[2:end], T in (TYPES..., Bool)
         A = rand([zero(T), one(T)], dims)
-        if ndims(A) != 0
-            B = boundingbox(A)
-            fillpart!(A, B, zero(T))
-            C = boundingbox(A)
-            @test isempty(C)
-            @test length(C) == 0
+        B = boundingbox(A)
+        fill!(A, B, zero(T))
+        C = boundingbox(A)
+        @test isempty(C)
+        @test length(C) == 0
+        inds = map(r -> first(r)+1:last(r)-1, axes(A))
+        B = CartesianBox(inds)
+        C = CartesianBox(map(r -> first(r)+2:last(r)-2, axes(A)))
+        fill!(A, zero(T))
+        fill!(A, B, one(T))
+        @test boundingbox(A) == B
+        A[B] .= zero(T)
+        @test isempty(boundingbox(A))
+        if T !== Bool
+            X = rand(T, size(C))
+            fill!(A, zero(T))
+            fill!(A, B, typemax(T))
+            A[C] = X
+            @test all(map(isequal, A[C], X))
+            @test boundingbox(x -> x != zero(T) && x < typemax(T), A) == C
+            @test boundingbox(x -> x != typemax(T), A, B) == C
+            V = view(A,C)
+            @test all(map(isequal, V, X))
         end
     end
 
