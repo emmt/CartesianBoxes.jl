@@ -2,7 +2,8 @@
 
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Build Status](https://travis-ci.org/emmt/CartesianBoxes.jl.svg?branch=master)](https://travis-ci.org/emmt/CartesianBoxes.jl)
-[![Coverage Status](https://coveralls.io/repos/emmt/CartesianBoxes.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/emmt/CartesianBoxes.jl?branch=master)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/emmt/CartesianBoxes.jl?branch=master)](https://ci.appveyor.com/project/emmt/CartesianBoxes-jl/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/emmt/CartesianBoxes.jl/badge.svg?branch=master)](https://coveralls.io/github/emmt/CartesianBoxes.jl?branch=master)
 [![codecov.io](http://codecov.io/github/emmt/CartesianBoxes.jl/coverage.svg?branch=master)](http://codecov.io/github/emmt/CartesianBoxes.jl?branch=master)
 
 This module implements rectangular regions of `N`-dimensional indices which are
