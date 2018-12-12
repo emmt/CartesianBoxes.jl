@@ -175,10 +175,10 @@ automatic.
 CartesianBoxable
 @static if isdefined(Base, :CartesianIndices)
     # Union of argument types accepted by CartesianBox outer constructors.
-    const CartesianBoxable{N} = Union{CartesianIndices{N},NTuple{N,Union{Integer,AbstractUnitRange{<:Integer}}}}
+    const CartesianBoxable{N} = Union{CartesianIndices{N},NTuple{N,AbstractUnitRange{<:Integer}},NTuple{N,Integer}}
 else
     # Idem but with CartesianRange.
-    const CartesianBoxable{N} = Union{CartesianIndices{N},NTuple{N,Union{Integer,AbstractUnitRange{<:Integer}}},CartesianRange{CartesianIndex{N}}}
+    const CartesianBoxable{N} = Union{CartesianIndices{N},NTuple{N,AbstractUnitRange{<:Integer}},NTuple{N,Integer},CartesianRange{CartesianIndex{N}}}
 end
 
 
