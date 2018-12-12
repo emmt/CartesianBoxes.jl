@@ -44,6 +44,11 @@ else
     const axes = indices
 end
 
+@static if VERSION < v"0.7.0-alpha"
+    # access to index tuple (FIXME: PR this to Compat.jl)
+    Base.Tuple(index::CartesianIndex) = index.I
+end
+
 """
 
 `CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
