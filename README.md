@@ -54,13 +54,9 @@ CartesianBox(size(A))
 CartesianBox((dim1, dim2, ...))
 ```
 
-Note that index ranges like `k:k` can be abbreviated by just specifying `k`.
-However, a tuple of integers, say `(n1,n2,...)`, is interpreted as a list of
-dimensions, as if `(1:n1, 1:n2, ...)` as been specified.  There is the same
-ambiguity in the constructors of `CartesianIndices` and of `CartesianRange`.
-
-Finally, it is possible to convert an instance, say `R`, of `CartesianIndices`
-or an instance of `CartesianRange` into a `CartesianBox`:
+It is also possible to convert an instance, say `R`, of `CartesianIndices` or
+an instance of `CartesianRange` into a `CartesianBox` by calling the
+constructor:
 
 ```julia
 B = CartesianBox(R)

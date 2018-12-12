@@ -16,3 +16,9 @@
 * `CartesianIndices(B)` and, for Julia versions ≤ 0.6, `CartesianIndices(B)` can
   be used to convert `B`, an instance of `CartesianBox{N}` to another
   representation.
+
+* Constructors of `CartesianBox{N}` no longer accept a mixture of dimension
+  lengths and index intervals.  This suppress the ambiguity that integer `n` is
+  interpreted as a dimension length when all other arguments are integers,
+  while it is interpreted as the range `n:n` when any other argument is an
+  index interval.

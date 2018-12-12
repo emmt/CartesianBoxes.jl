@@ -92,9 +92,9 @@ CartesianBox(R::CartesianIndices) = CartesianBox(R.indices)
 end
 CartesianBox(dims::NTuple{N,Integer}) where N =
     CartesianBox(one(CartesianIndex{N}), CartesianIndex(dims))
-CartesianBox(inds::NTuple{N,Union{Integer,AbstractUnitRange{<:Integer}}}) where N =
-    CartesianBox(CartesianIndex(map(first, inds)),
-                 CartesianIndex(map(last,  inds)))
+CartesianBox(rngs::NTuple{N,AbstractUnitRange{<:Integer}}) where N =
+    CartesianBox(CartesianIndex(map(first, rngs)),
+                 CartesianIndex(map(last,  rngs)))
 CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
     CartesianRange(CartesianIndex(first), CartesianIndex(last))
 CartesianBox(::Tuple{}) =
@@ -192,8 +192,8 @@ end
     @inline iterate(iter::CartesianBox) =
         isempty(iter) ? nothing : (first(iter), first(iter))
     @inline function iterate(iter::CartesianBox, state)
-        nextstate = CartesianIndex(inc(Tuple(state), Tuple(first(iter)), Tuple(last(iter))))
-        Tuple(nextstate)[end] > Tuple(last(iter))[end] ? nothing : (nextstate, nextstate)
+        next = CartesianIndex(inc(Tuple(state), Tuple(first(iter)), Tuple(last(iter))))
+        Tuple(next)[end] > Tuple(last(iter))[end] ? nothing : (next, next)
     end
 else
     import Base: start, done, next
