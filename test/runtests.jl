@@ -3,7 +3,12 @@
 module CartesianBoxesTests
 
 using Compat
-using Compat.Test
+if VERSION < v"0.7"
+    using Compat.Test
+else
+    using Test
+end
+
 using CartesianBoxes
 
 # Deal with compatibility issues.
