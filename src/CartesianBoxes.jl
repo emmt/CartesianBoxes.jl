@@ -44,11 +44,6 @@ else
     const axes = indices
 end
 
-@static if VERSION < v"0.7.0-alpha"
-    # access to index tuple (FIXME: PR this to Compat.jl)
-    Base.Tuple(index::CartesianIndex) = index.I
-end
-
 """
 
 `CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
@@ -85,7 +80,7 @@ See also: [`boundingbox`](@ref), [`CartesianIndices`](@ref),
 [`CartesianRange`](@ref), [`CartesianIndex`](@ref), [`intersection`](@ref).
 
 """
-struct CartesianBox{N}
+struct CartesianBox{N} <: AbstractArray{CartesianIndex{N},N}
     first::CartesianIndex{N}
     last::CartesianIndex{N}
 end
@@ -107,21 +102,21 @@ CartesianBox(::Tuple{}) =
 
 @inline first(B::CartesianBox) = B.first
 @inline last(B::CartesianBox) = B.last
-@inline isempty(B::CartesianBox) = any(map(>, Tuple(first(B)), Tuple(last(B))))
+@inline isempty(B::CartesianBox) = any(map(>, first(B).I, last(B).I))
 ndims(::CartesianBox{N}) where {N} = N
 eltype(::CartesianBox{N}) where {N} = CartesianIndex{N}
 length(B::CartesianBox) = prod(size(B))
-size(B::CartesianBox) = map(_dimensionlength, Tuple(first(B)), Tuple(last(B)))
+size(B::CartesianBox) = map(_dimensionlength, first(B).I, last(B).I)
 size(B::CartesianBox, d) =
-    _dimensionlength(Tuple(first(B))[d], Tuple(last(B))[d])
-axes(B::CartesianBox) = map((i,j) -> i:j, Tuple(first(B)), Tuple(last(B)))
-axes(B::CartesianBox, d) = (Tuple(first(B))[d]:Tuple(last(B))[d])
+    _dimensionlength(first(B).I[d], last(B).I[d])
+axes(B::CartesianBox) = map((i,j) -> i:j, first(B).I, last(B).I)
+axes(B::CartesianBox, d) = (first(B).I[d]:last(B).I[d])
 
 _dimensionlength(first::Int, last::Int) = max(0, last - first + 1)
 
 
 view(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
-    view(A, map((i,j) -> i:j, Tuple(first(B)), Tuple(last(B)))...)
+    view(A, map((i,j) -> i:j, first(B).I, last(B).I)...)
 
 function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
     empty = isempty(B)
@@ -129,8 +124,8 @@ function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
         throw(BoundsError("sub-region is not part of array"))
     C = Array{T}(undef, size(B))
     if ! empty
-        if any(i -> i != 1, Tuple(first(B)))
-            off = CartesianIndex(map(i -> i - 1, Tuple(first(B))))
+        if any(i -> i != 1, first(B).I)
+            off = CartesianIndex(map(i -> i - 1, first(B).I))
             @inbounds @simd for i in B
                 C[i - off] = A[i]
             end
@@ -144,7 +139,7 @@ function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
 end
 
 setindex!(A::AbstractArray{<:Any,N}, x, B::CartesianBox{N}) where {N} =
-    A[map((i,j) -> i:j, Tuple(first(B)), Tuple(last(B)))...] = x
+    A[map((i,j) -> i:j, first(B).I, last(B).I)...] = x
 
 fill!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
     fill!(A, B, convert(T, x))
@@ -186,7 +181,7 @@ end
 # CartesianRange for Julia ≤ 0.6).
 eachindex(::IndexCartesian, B::CartesianBox) = B
 CartesianIndices(B::CartesianBox) =
-    CartesianIndices(map((i,j) -> i:j, Tuple(first(B)), Tuple(last(B))))
+    CartesianIndices(map((i,j) -> i:j, first(B).I, last(B).I))
 @static if ! isdefined(Base, :CartesianIndices)
     CartesianRange(B::CartesianBox) = CartesianRange(first(B), last(B))
 end
@@ -197,17 +192,17 @@ end
     @inline iterate(iter::CartesianBox) =
         isempty(iter) ? nothing : (first(iter), first(iter))
     @inline function iterate(iter::CartesianBox, state)
-        next = CartesianIndex(inc(Tuple(state), Tuple(first(iter)), Tuple(last(iter))))
-        Tuple(next)[end] > Tuple(last(iter))[end] ? nothing : (next, next)
+        next = CartesianIndex(inc(state.I, first(iter).I, last(iter).I))
+        next.I[end] > last(iter).I[end] ? nothing : (next, next)
     end
 else
     import Base: start, done, next
     @inline start(iter::CartesianBox) =
         isempty(iter) ? last(iter) + 1 : first(iter)
     @inline next(iter::CartesianBox{N}, state) where {N} =
-        state, CartesianIndex{N}(inc(Tuple(state), Tuple(first(iter)), Tuple(last(iter))))
+        state, CartesianIndex{N}(inc(state.I, first(iter).I, last(iter).I))
     @inline done(iter::CartesianBox{N}, state) where {N} =
-        Tuple(state)[end] > Tuple(last(iter))[end]
+        state.I[end] > last(iter).I[end]
 end
 
 # 0-d cartesian ranges are special-cased to iterate once and only once
@@ -223,14 +218,14 @@ end
 # Extend methods for fast SIMD iterations.
 simd_outer_range(iter::CartesianBox{0}) = iter
 simd_outer_range(iter::CartesianBox) =
-    CartesianBox(CartesianIndex(tail(Tuple(first(iter)))),
-                 CartesianIndex(tail(Tuple(last(iter)))))
+    CartesianBox(CartesianIndex(tail(first(iter).I)),
+                 CartesianIndex(tail(last(iter).I)))
 simd_inner_length(iter::CartesianBox{0}, ::CartesianIndex) = 1
 simd_inner_length(iter::CartesianBox, I::CartesianIndex) =
-    Tuple(last(iter))[1] - Tuple(first(iter))[1] + 1
+    last(iter).I[1] - first(iter).I[1] + 1
 simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
 @inline simd_index(iter::CartesianBox, Ilast::CartesianIndex, I1::Int) =
-    CartesianIndex((I1 + first(iter)[1], Tuple(Ilast)...))
+    CartesianIndex((I1 + first(iter)[1], Ilast.I...))
 
 """
 
