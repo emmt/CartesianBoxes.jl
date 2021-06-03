@@ -308,18 +308,18 @@ boundingbox(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
     boundingbox(isnonzero, A, B)
 boundingbox(A::AbstractArray{<:Any,N}, B::CartesianBoxable{N}) where {N} =
     boundingbox(A, CartesianBox(B))
-function boundingbox(predicate::Function, A::AbstractArray{<:Any,N},
+function boundingbox(pred::Function, A::AbstractArray{<:Any,N},
                      B::CartesianBoxable{N}) where {N}
-    boundingbox(predicate, A, CartesianBox(B))
+    boundingbox(pred, A, CartesianBox(B))
 end
 
-function boundingbox(predicate::Function,
+function boundingbox(pred::Function,
                      A::AbstractArray{T,N}) where {T,N}
     inds = axes(A)
     Imin = CartesianIndex(map(r -> last(r) + 1, inds))
     Imax = CartesianIndex(map(r -> first(r) - 1, inds))
     @inbounds for I in CartesianBox(A)
-        if predicate(A[I])
+        if pred(A[I])
             Imin = min(Imin, I)
             Imax = max(Imax, I)
         end
@@ -327,7 +327,7 @@ function boundingbox(predicate::Function,
     return CartesianBox(Imin, Imax)
 end
 
-function boundingbox(predicate::Function,
+function boundingbox(pred::Function,
                      A::AbstractArray{T,N},
                      B::CartesianBox{N}) where {T,N}
     R = intersection(CartesianBox(A), B)
@@ -335,7 +335,7 @@ function boundingbox(predicate::Function,
     Imin = CartesianIndex(map(r -> last(r) + 1, inds))
     Imax = CartesianIndex(map(r -> first(r) - 1, inds))
     @inbounds for I in R
-        if predicate(A[I])
+        if pred(A[I])
             Imin = min(Imin, I)
             Imax = max(Imax, I)
         end
