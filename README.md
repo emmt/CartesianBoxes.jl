@@ -8,12 +8,12 @@
 
 This module implements `CartesianBox{N}` to define rectangular regions of
 `N`-dimensional indices in Julia arrays.  Cartesian boxes are similar to
-`CartesianIndices` or, for Julia version ≤ 0.6, to `CartesianRange` but, being
-a different type, they can be used to specifically extend methods without
-introducing unexpected behaviors in other Julia modules.
+`CartesianIndices` but, being a different type, they can be used to
+specifically extend methods without introducing unexpected behaviors in other
+Julia modules.
 
 For multi-dimensional loops, instances of `CartesianBox{N}` are as fast as
-`CartesianIndices{N}` or as `CartesianRange{CardinalIndex{N}}`.  They can thus
+`CartesianIndices{N}`.  They can thus
 be used as a *fast* and *portable* replacement (see [*Rationale*](#rationale)
 below) of these different representations of rectangular multi-dimensional
 regions.
@@ -54,16 +54,20 @@ CartesianBox(size(A))
 CartesianBox((dim1, dim2, ...))
 ```
 
-It is also possible to convert an instance, say `R`, of `CartesianIndices` or
-an instance of `CartesianRange` into a `CartesianBox` by calling the
-constructor:
+It is also possible to convert an instance `R` of `CartesianIndices` into a
+`CartesianBox` by calling the constructor:
 
 ```julia
 B = CartesianBox(R)
 ```
 
-The reverse operation is also possible, `CartesianIndices(B)` and
-`CartesianRange(B)` work as expected.
+The reverse operation is also possible:
+
+```julia
+CartesianIndices(B) === R
+```
+
+is true.
 
 
 ### Fast iterations
@@ -161,8 +165,8 @@ yields the bounding-box of values in array `A` for which the predicate function
 `pred` is true.  If the predicate function `pred` is omitted, the result is the
 bounding-box of non-zero values in array `A` or of the `true` values in `A` if
 its elements are of type `Bool`.  Optional argument `B` is to only consider a
-sub-region `B` of `A` (`B` can be a `CartesianBox`, a `CartesianIndices`, a
-`CartesianRange` or a tuple of integer unit ranges).
+sub-region `B` of `A` (`B` can be a `CartesianBox`, a `CartesianIndices`, or a
+tuple of integer valued unit ranges).
 
 
 ## Restrictions

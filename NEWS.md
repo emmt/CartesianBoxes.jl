@@ -1,3 +1,20 @@
+# User visible changes in `CartesianBoxes`
+
+## Branch 0.2
+
+* Type `CartesianBox` is now a simple decoration wrapped around an instance of
+  `CartesianIndices`.  This simplifies a lot the code and lessen the risk of
+  incompatibilities with future Julia versions. However, compatibility with
+  Julia < 0.7 has to be abandoned.
+
+* Cartesian boxes are now abstract arrays.  Type `CartesianBox{N}` is a subtype
+  of `AbstractArray{CartesianIndex{N},N}`.  Method `axes(B)` which used to
+  yield the list of index ranges in a Cartesian box `B` now yield the list of
+  index ranges to index `B`.  Call `ranges(B)` to get the list of index ranges
+  in the Cartesian box `B`.
+
+## Branch 0.1
+
 * `isnonemptypartof(R,S)` yielding `false` for any unsupported argument types
   has been removed as it is better to get an exception in this case.
 
