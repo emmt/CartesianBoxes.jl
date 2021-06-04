@@ -279,7 +279,7 @@ function boundingbox(pred,
         end
     end
     if _isempty(Imin, Imax)
-        Imin = oneunit(CartesianIndex{N})
+        Imin = one_(CartesianIndex{N})
         Imax = zero(CartesianIndex{N})
     end
     return CartesianBox(Imin, Imax)
@@ -299,10 +299,17 @@ function boundingbox(pred,
         end
     end
     if _isempty(Imin, Imax)
-        Imin = oneunit(CartesianIndex{N})
+        Imin = one_(CartesianIndex{N})
         Imax = zero(CartesianIndex{N})
     end
     return CartesianBox(Imin, Imax)
+end
+
+one_(I::CartesianIndex) = one_(typeof(I))
+@static if VERSION < v"1.1.0-rc1"
+    one_(T::Type{<:CartesianIndex}) = one(T)
+else
+    one_(T::Type{<:CartesianIndex}) = oneunit(T)
 end
 
 """
