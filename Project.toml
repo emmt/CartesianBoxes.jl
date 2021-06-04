@@ -3,9 +3,6 @@ uuid = "f894539e-422c-4c16-819a-0e1d0163d378"
 authors = ["Éric Thiébaut <https://github.com/emmt>"]
 version = "0.2.0"
 
-[deps]
-Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
-
 [compat]
 julia = "0.7, 1"
 

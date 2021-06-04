@@ -30,9 +30,6 @@ import Base: CartesianIndices, IndexStyle, axes, eachindex, isempty,
     getindex, setindex!, fill!, show
 import Base: simd_outer_range, simd_inner_length, simd_index
 
-# Deal with compatibility issues.
-using Compat
-
 """
 
 `CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
@@ -98,8 +95,8 @@ last(B::CartesianBox) = last(CartesianIndices(B))
 size(B::CartesianBox) = size(CartesianIndices(B))
 axes(B::CartesianBox) = axes(CartesianIndices(B))
 
-isempty(B::CartesianBox) = _isempty(first(B), last(B))
-@inline _isempty(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
+isempty(B::CartesianBox) = isempty_(first(B), last(B))
+@inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     any(map(isless, last.I, first.I))
 
 show(io::IO, ::MIME"text/plain", B::CartesianBox{N}) where {N} = begin
@@ -278,7 +275,7 @@ function boundingbox(pred,
             Imax = max(Imax, I)
         end
     end
-    if _isempty(Imin, Imax)
+    if isempty_(Imin, Imax)
         Imin = one_(CartesianIndex{N})
         Imax = zero(CartesianIndex{N})
     end
@@ -298,7 +295,7 @@ function boundingbox(pred,
             Imax = max(Imax, I)
         end
     end
-    if _isempty(Imin, Imax)
+    if isempty_(Imin, Imax)
         Imin = one_(CartesianIndex{N})
         Imax = zero(CartesianIndex{N})
     end
@@ -306,11 +303,12 @@ function boundingbox(pred,
 end
 
 one_(I::CartesianIndex) = one_(typeof(I))
-@static if VERSION < v"1.1.0-rc1"
-    one_(T::Type{<:CartesianIndex}) = one(T)
-else
-    one_(T::Type{<:CartesianIndex}) = oneunit(T)
-end
+one_(T::Type{<:CartesianIndex}) =
+    @static if VERSION < v"1.1.0-rc1"
+        one(T)
+    else
+        oneunit(T)
+    end
 
 """
     isnonzero(x)

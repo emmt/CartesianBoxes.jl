@@ -1,8 +1,5 @@
-# isdefined(Main, :CartesianBoxes) || include("../src/CartesianBoxes.jl")
+module TestingCartesianBoxes
 
-module CartesianBoxesTests
-
-using Compat
 using Test
 using CartesianBoxes
 
@@ -123,7 +120,7 @@ TYPES = (Float64, Float32)
         r = CartesianIndices(A)
         b = CartesianBox(A)
         @test ndims(b) == ndims(r)
-        @test eltype(b) == eltype(r)
+        @test eltype(b) === eltype(r)
         @test length(b) == stupidcount(b)
         @test length(b) == length(r)
         @test size(b) == size(r)
@@ -196,7 +193,7 @@ TYPES = (Float64, Float32)
             fill!(A, B, typemax(T))
             A[C] = X
             @test all(map(isequal, A[C], X))
-            #@test boundingbox(x -> x != zero(T) && x < typemax(T), A) == C
+            @test boundingbox(x -> x != zero(T) && x < typemax(T), A) == C
             @test boundingbox(x -> x != typemax(T), A, B) == C
             inds = ranges(B)
             @test boundingbox(x -> x != typemax(T), A, inds) == C
