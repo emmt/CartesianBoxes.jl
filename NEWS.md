@@ -13,6 +13,13 @@
   index ranges to index `B`.  Call `ranges(B)` to get the list of index ranges
   in the Cartesian box `B`.
 
+* Expressions `A ∩ B` and `A ⊆ B` (or equivalently `intersect(A,B)` and
+  `issubset(A,B)`) yield a Cartesian box when at least one of `A` or `B` is a
+  Cartesian box while the other is a Cartesian box, a list of integer valued
+  ranges, a list of dimensions, an instance of `CartesianIndices`, or an
+  (abstract) array.
+
+
 ## Branch 0.1
 
 * `isnonemptypartof(R,S)` yielding `false` for any unsupported argument types

@@ -32,11 +32,12 @@ CartesianBox(A)
 
 yields the Cartesian box which contains all indices of array `A`.  An arbitrary
 region whose first an last multi-dimensional indices are `(imin,jmin,...)` and
-`(imax,jmax,...)` can be defined by one of the following calls:
+`(imax,jmax,...)` can be defined by one of:
 
 ```julia
 CartesianBox(CartesianIndex(imin,jmin,...), CartesianIndex(imax,jmax,...))
 CartesianBox((imin:imax, jmin:jmax, ...))
+CartesianBox((imin,jmin,...), (imax,jmax,...))
 ```
 
 hence
@@ -45,7 +46,7 @@ hence
 CartesianBox(axes(A))
 ```
 
-also defines a Cartesian box encompassing all indices of array `A`.  For normal
+also defines a Cartesian box containing all indices of array `A`.  For normal
 arrays (with 1-based indices), it is sufficient to provide the dimensions of
 the array:
 
@@ -54,6 +55,9 @@ CartesianBox(size(A))
 CartesianBox((dim1, dim2, ...))
 ```
 
+This is however not recommended, `CartesianBox(axes(A))` or, for short,
+`CartesianBox(A)` are more likely to be coorect for any kind of array `A`.
+
 It is also possible to convert an instance `R` of `CartesianIndices` into a
 `CartesianBox` by calling the constructor:
 
@@ -61,22 +65,21 @@ It is also possible to convert an instance `R` of `CartesianIndices` into a
 B = CartesianBox(R)
 ```
 
-The reverse operation is also possible:
+The reverse operation is also possible and is lossless as shown by:
 
 ```julia
 CartesianIndices(B) === R
 ```
 
-is true.
+which is always true.
 
 
-### Fast iterations
+### Fast (and safe) iterations
 
 An instance of `CartesianBox` can be used in a loop as follows:
 
 ```julia
-B = CartesianBox(...)
-for i in B
+for i in CartesianBox(...)
    A[i] = ...
 end
 ```
@@ -88,11 +91,42 @@ you may suppress bound checking and activate
 vectorization:
 
 ```julia
-B = CartesianBox(...)
-@inbounds @simd for i in B
+@inbounds @simd for i in CartesianBox(...)
    A[i] = ...
 end
 ```
+
+When at least one of `A` or `B` is a Cartesian box, the expression `A ∩ B`, or
+equivalently `intersect(A,B)`, yields the Cartesian box contining all indices
+in `A` and `B`.  This may be used to write safe loops like:
+
+```julia
+A = ...               # some array
+B = CartesianBox(...) # some region of interest
+@inbounds for i in B ∩ A
+    A[i] = ...
+end
+```
+
+to operate on the indices of the Cartesian box `B` that are valid for `A`.
+
+When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B`, or
+equivalently `intersect(A,B)`, yields whether all Cartesian indices defined by
+`A` are also indices of `B`.  This may be used as:
+
+```julia
+A = ...               # some array
+B = CartesianBox(...) # some region of interest
+if B ⊆ A
+    @inbounds for i in B
+        A[i] = ...
+    end
+end
+```
+
+to only access the indices of the Cartesian box `B` if they are all valid for
+`A`.
+
 
 ### Indexation and views
 
@@ -126,34 +160,35 @@ which yields a sub-array `V` sharing its elements with `A` in the region
 defined by `B`.
 
 
-### Methods
+### Exported or extended methods
 
 The call:
 
 ```julia
-intersection(R, S)
+intersection(A, B)
 ```
 
-yields the Cartesian box which is the intersection of the Cartesian regions
-defined by `R` and `S`.  This method is similar to `intersect(R,S) = R ∩ S`
-which yields an array of Cartesian indices and is **much** slower (and hence
-less useful).
+yields the Cartesian box given by the intersection of the Cartesian regions
+defined by `A` and `B`.  In this context, a Cartesian region can specified by a
+Cartesian box, a list of integer valued ranges, a list of dimensions, or an
+instance of `CartesianIndices`.  This method is equivalent to `intersect(A,B)`,
+or `A ∩ B` for short, when at least one of `A` or `B` is a Cartesian box.
 
 The call:
 
 ```julia
-isnonemptypartof(R, S)
+isnonemptypartof(A, B)
 ```
 
-yields whether the region defined by `R` is nonempty and a valid part of the
-region defined by `S` or of the contents of `S` if it is an array.  If this
-method returns `false`, you may call:
+yields whether the region defined by `A` is nonempty and a valid part of the
+region defined by `B` or of the contents of `B` if it is an array.  If this
+method returns `false`, you may call `isempty(A)` to check whether `A` is
+empty.  When at least one of `A` or `B` is a Cartesian box, the expression
+`A ⊆ B`, or `issubset(A,B)`, is equivalent to:
 
 ```julia
-isempty(R)
+isempty(A) || isnonemptypartof(A, B)
 ```
-
-to check whether `R` was empty.
 
 The call:
 

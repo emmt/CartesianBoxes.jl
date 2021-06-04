@@ -27,7 +27,7 @@ using Base: tail, @propagate_inbounds
 
 import Base: CartesianIndices, IndexStyle, axes, eachindex, isempty,
     iterate, first, last, ndims, eltype, length, size, view,
-    getindex, setindex!, fill!, show
+    intersect, issubset, getindex, setindex!, fill!, show
 import Base: simd_outer_range, simd_inner_length, simd_index
 
 """
@@ -45,22 +45,54 @@ where `A` is an array (to define a region consisting in all the indices in the
 array), `imin`, `imax`, etc. are integers (to define a region from
 `(imin,jmin,...)` to `(imax,jmax,...)`.
 
+`CartesianBox(size(A))` yields a Cartesian region of the same size as `A` but
+whose indices all start at 1.  In most cases, `CartesianBox(axes(A))` is more
+likely to do the right thing.  In fact, `CartesianBox(A)` is equivalent to
+`CartesianBox(axes(A))`.
+
 An instance of `CartesianBox` can also be constructed from an instance of
-`CartesianIndices` and conversely:
+`CartesianIndices` and conversely.  The conversion is lossless in the sense of
+the following example:
 
     B = CartesianBox(...)
     R = CartesianIndices(B)
-    CartesianBox(R) === B # yields true
+    CartesianBox(R) === B # always true
 
-An instance of `CartesianBox` can be used in a loop as follows:
+An instance of `CartesianBox` can be efficiently used in a loop as follows:
 
-    B = CartesianBox(...)
-    for i in B
+    for i in CartesianBox(...)
        A[i] = ...
     end
 
 where `i` will be set to a `CartesianIndex` with all the multi-dimensional
 indices of the rectangular region defined by `B`.
+
+When at least one of `A` or `B` is a Cartesian box, the expression `A ∩ B`, or
+equivalently `intersect(A,B)`, yields the Cartesian box contining all indices
+in `A` and `B`.  This may be used to write safe loops like:
+
+    A = ...               # some array
+    B = CartesianBox(...) # some region of interest
+    @inbounds for i in B ∩ A
+        A[i] = ...
+    end
+
+to operate on the indices of the Cartesian box `B` that are valid for `A`.
+
+When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B`, or
+equivalently `intersect(A,B)`, yields whether all Cartesian indices defined by
+`A` are also indices of `B`.  This may be used as:
+
+    A = ...               # some array
+    B = CartesianBox(...) # some region of interest
+    if B ⊆ A
+        @inbounds for i in B
+            A[i] = ...
+        end
+    end
+
+to only access the indices of the Cartesian box `B` if they are all valid for
+`A`.
 
 See also: [`boundingbox`](@ref), `CartesianIndices`, `CartesianIndex`,
 [`intersection`](@ref).
@@ -73,7 +105,6 @@ CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
 CartesianBox(inds::Tuple{Vararg{Union{<:Integer,AbstractUnitRange{<:Integer}}}}) =
         CartesianBox(CartesianIndices(inds))
-#CartesianBox(::Tuple{}) = CartesianBox(CartesianIndices(()))
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     CartesianBox(first.I, last.I)
 CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
@@ -172,7 +203,6 @@ const CartesianBoxable{N} = Union{CartesianIndices{N},
                                   NTuple{N,AbstractUnitRange{<:Integer}},
                                   NTuple{N,Integer}}
 
-
 # Extend eachindex() method.
 eachindex(::IndexCartesian, B::CartesianBox) = B
 
@@ -193,47 +223,73 @@ simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
     CartesianIndex((I1 + first(iter)[1], Ilast.I...))
 
 """
-    intersection(R, S)
+    intersection(A, B)
 
-yields the Cartesian box which is the intersection of the Cartesian regions
-defined by `R` and `S`.  This method is similar to `intersect(R,S) = R ∩ S`
-which yields an array of Cartesian indices and is **much** slower (and less
-useful).
+yields the Cartesian box given by the intersection of the Cartesian regions
+defined by `A` and `B`.  In this context, a Cartesian region can specified by a
+Cartesian box, a list of integer valued ranges, a list of dimensions, or an
+instance of `CartesianIndices`.
+
+This method is equivalent to `intersect(A,B)`, or `A ∩ B` for short, when at
+least one of `A` or `B` is a Cartesian box.
 
 See also: [`CartesianBox`](@ref), [`isnonemptypartof`](@ref).
 
 """
-intersection(R::CartesianBox{N}, S::CartesianBox{N}) where {N} =
-    CartesianBox(max(first(R), first(S)), min(last(R), last(S)))
-intersection(R::CartesianBox{N}, S::CartesianBoxable{N}) where {N} =
-    intersection(R, CartesianBox(S))
-intersection(R::CartesianBoxable{N}, S::CartesianBox{N}) where {N} =
-    intersection(CartesianBox(R), S)
-intersection(R::CartesianBoxable{N}, S::CartesianBoxable{N}) where {N} =
-    intersection(CartesianBox(R), CartesianBox(S))
+intersection(A::CartesianBox{N}, B::CartesianBox{N}) where {N} = A ∩ B
+intersection(A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
+    A ∩ CartesianBox(B)
+intersection(A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
+    CartesianBox(A) ∩ B
+intersection(A::CartesianBoxable{N}, B::CartesianBoxable{N}) where {N} =
+    CartesianBox(A) ∩ CartesianBox(B)
+
+# Override ∩(A,B) and ⊆(A,B) when at least one of A or B is a Cartesian box,
+# the other being boxable or an abstract array.
+for f in (:intersect, :issubset)
+    @eval begin
+        $f(A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
+            $f(A, CartesianBox(B))
+        $f(A::CartesianBox{N}, B::AbstractArray{<:Any,N}) where {N} =
+            $f(A, CartesianBox(B))
+        $f(A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
+            $f(CartesianBox(A), B)
+        $f(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
+            $f(CartesianBox(A), B)
+    end
+end
+@inline intersect(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    CartesianBox(max(first(A), first(B)), min(last(A), last(B)))
+@inline issubset(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    isempty(A) || isnonemptypartof(A,B)
 
 """
-    isnonemptypartof(R, S)
+    isnonemptypartof(A, B)
 
-yields whether the region defined by `R` is nonempty and a valid part of the
-region defined by `S` or of the contents of `S` if it is an array.  If this
-method returns `false`, you may call `isempty(R)` to check whether `R` was
+yields whether the region defined by `A` is nonempty and a valid part of the
+region defined by `B` or of the contents of `B` if it is an array.  If this
+method returns `false`, you may call `isempty(A)` to check whether `A` is
 empty.
+
+When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B` or
+`issubset(A,B)` is equivalent to:
+
+    isempty(A) || isnonemptypartof(A, B)
 
 See also: [`CartesianBox`](@ref), [`intersection`](@ref).
 
 """
-function isnonemptypartof(R::Union{CartesianBoxable{N},CartesianBox{N}},
-                          S::Union{CartesianBoxable{N},
+function isnonemptypartof(A::Union{CartesianBoxable{N},CartesianBox{N}},
+                          B::Union{CartesianBoxable{N},
                                    AbstractArray{<:Any,N}}) where {N}
-    isnonemptypartof(R, CartesianBox(S))
+    isnonemptypartof(A, CartesianBox(B))
 end
 
-isnonemptypartof(R::CartesianBoxable{N}, S::CartesianBox{N}) where {N} =
-    isnonemptypartof(CartesianBox(R), S)
+isnonemptypartof(A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
+    isnonemptypartof(CartesianBox(A), B)
 
-isnonemptypartof(R::CartesianBox{N}, S::CartesianBox{N}) where {N} =
-    first(S) ≤ first(R) ≤ last(R) ≤ last(S)
+@inline isnonemptypartof(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    first(B) ≤ first(A) ≤ last(A) ≤ last(B)
 
 
 """
@@ -266,9 +322,8 @@ boundingbox(pred, A::AbstractArray{<:Any,N}, B::CartesianBoxable{N}) where {N} =
 
 function boundingbox(pred,
                      A::AbstractArray{T,N}) where {T,N}
-    inds = axes(A)
-    Imin = CartesianIndex(map(r -> last(r) + 1, inds))
-    Imax = CartesianIndex(map(r -> first(r) - 1, inds))
+    Imin = typemax_(CartesianIndex{N})
+    Imax = typemin_(CartesianIndex{N})
     @inbounds for I in CartesianBox(A)
         if pred(A[I])
             Imin = min(Imin, I)
@@ -285,11 +340,9 @@ end
 function boundingbox(pred,
                      A::AbstractArray{T,N},
                      B::CartesianBox{N}) where {T,N}
-    R = intersection(CartesianBox(A), B)
-    inds = axes(R)
-    Imin = CartesianIndex(map(r -> last(r) + 1, inds))
-    Imax = CartesianIndex(map(r -> first(r) - 1, inds))
-    @inbounds for I in R
+    Imin = typemax_(CartesianIndex{N})
+    Imax = typemin_(CartesianIndex{N})
+    @inbounds for I in CartesianBox(A) ∩ B
         if pred(A[I])
             Imin = min(Imin, I)
             Imax = max(Imax, I)
@@ -301,6 +354,11 @@ function boundingbox(pred,
     end
     return CartesianBox(Imin, Imax)
 end
+
+@inline typemin_(::Type{<:CartesianIndex{N}}) where {N} =
+    CartesianIndex(ntuple(i -> typemin(Int), Val(N)))
+@inline typemax_(::Type{<:CartesianIndex{N}}) where {N} =
+    CartesianIndex(ntuple(i -> typemax(Int), Val(N)))
 
 one_(I::CartesianIndex) = one_(typeof(I))
 one_(T::Type{<:CartesianIndex}) =
