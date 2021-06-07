@@ -129,6 +129,11 @@ TYPES = (Float64, Float32)
             @test size(b,d) == size(r,d)
             @test axes(b,d) == axes(r,d)
         end
+        @test first(b) === first(r)
+        @test last(b) === last(r)
+        buf = IOBuffer();
+        show(buf, MIME"text/plain"(), b);
+        @test String(take!(buf)) == repr(b)
 
         @test CartesianBox(r) == b
         @test CartesianIndices(b) == r
@@ -176,7 +181,7 @@ TYPES = (Float64, Float32)
     @testset "Array functions" for dims in SIZES[2:end], T in (TYPES..., Bool)
         A = rand([zero(T), one(T)], dims)
         B = boundingbox(A)
-        fill!(A, B, zero(T))
+        fill!(A, B, 0)
         C = boundingbox(A)
         @test isempty(C)
         @test length(C) == 0

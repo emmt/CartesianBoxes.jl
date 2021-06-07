@@ -30,6 +30,13 @@ import Base: CartesianIndices, IndexStyle, axes, eachindex, isempty,
     intersect, issubset, getindex, setindex!, fill!, show
 import Base: simd_outer_range, simd_inner_length, simd_index
 
+# Starting with Julia-1.6.0-beta1, Cartesian indices can have non-unit step.
+const IndexRange{I} = @static if VERSION < v"1.6.0-beta1"
+    AbstractUnitRange{I}
+else
+    OrdinalRange{I,I}
+end
+
 """
 
 `CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
@@ -37,13 +44,14 @@ can be constructed by:
 
     CartesianBox(A)
     CartesianBox(axes(A))
-    CartesianBox(CartesianIndex(imin,jmin,...), CartesianIndex(imax,jmax,...))
-    CartesianBox((imin,jmin,...), (imax,jmax,...))
-    CartesianBox((imin:imax, jmin:jmax, ...))
+    CartesianBox(CartesianIndex(istart,jstart,...), CartesianIndex(istop,jstop,...))
+    CartesianBox((istart,jstart,...), (istop,jstop,...))
+    CartesianBox((istart:[istep:]istop, jstart:[jstep:]jstop, ...))
 
 where `A` is an array (to define a region consisting in all the indices in the
-array), `imin`, `imax`, etc. are integers (to define a region from
-`(imin,jmin,...)` to `(imax,jmax,...)`.
+array), `istart`, `istop`, etc. are integers (to define a region from
+`(istart,jstart,...)` to `(istop,jstop,...)`.  Starting with Julia 1.6, a
+non-unit step `istep`, `jstep`, etc. may also be specified.
 
 `CartesianBox(size(A))` yields a Cartesian region of the same size as `A` but
 whose indices all start at 1.  In most cases, `CartesianBox(axes(A))` is more
@@ -103,7 +111,7 @@ struct CartesianBox{N,R<:CartesianIndices{N}} <: AbstractArray{CartesianIndex{N}
 end
 CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
-CartesianBox(inds::Tuple{Vararg{Union{<:Integer,AbstractUnitRange{<:Integer}}}}) =
+CartesianBox(inds::Tuple{Vararg{Union{<:Integer,IndexRange{<:Integer}}}}) =
         CartesianBox(CartesianIndices(inds))
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     CartesianBox(first.I, last.I)
@@ -130,17 +138,11 @@ isempty(B::CartesianBox) = isempty_(first(B), last(B))
 @inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     any(map(isless, last.I, first.I))
 
-show(io::IO, ::MIME"text/plain", B::CartesianBox{N}) where {N} = begin
-    print(io, "CartesianBox{",N,"}((")
-    if N >= 1
-        I = first(B).I
-        J = last(B).I
-        print(io, I[1], ":", J[1])
-        for k in 2:N
-            print(io, ", ", I[k], ":", J[k])
-        end
-    end
-    print(io, "))")
+show(io::IO, ::MIME"text/plain", B::CartesianBox) = show(io, B)
+show(io::IO, B::CartesianBox) = begin
+    print(io, "CartesianBox(")
+    print(io, ranges(B))
+    print(io, ")")
 end
 
 view(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
@@ -200,7 +202,7 @@ can be automatically converted into a `CartesianBox{N}`.
 
 """
 const CartesianBoxable{N} = Union{CartesianIndices{N},
-                                  NTuple{N,AbstractUnitRange{<:Integer}},
+                                  NTuple{N,IndexRange{<:Integer}},
                                   NTuple{N,Integer}}
 
 # Extend eachindex() method.
@@ -212,15 +214,16 @@ iterate(iter::CartesianBox, state) = iterate(CartesianIndices(iter), state)
 
 # Extend methods for fast SIMD iterations.
 simd_outer_range(iter::CartesianBox{0}) = iter
-simd_outer_range(iter::CartesianBox) =
-    CartesianBox(CartesianIndex(tail(first(iter).I)),
-                 CartesianIndex(tail(last(iter).I)))
+simd_outer_range(iter::CartesianBox) = CartesianBox(tail(ranges(iter)))
 simd_inner_length(iter::CartesianBox{0}, ::CartesianIndex) = 1
-simd_inner_length(iter::CartesianBox, I::CartesianIndex) =
-    last(iter).I[1] - first(iter).I[1] + 1
+simd_inner_length(iter::CartesianBox, I::CartesianIndex) = length(ranges(iter)[1])
 simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
-@inline simd_index(iter::CartesianBox, Ilast::CartesianIndex, I1::Int) =
-    CartesianIndex((I1 + first(iter)[1], Ilast.I...))
+@inline @propagate_inbounds function simd_index(iter::CartesianBox,
+                                                Ilast::CartesianIndex, I1::Int)
+    # For maximum portability, delegate work to do to the embedded
+    # CartesianIndices.
+    simd_index(CartesianIndices(iter), Ilast, I1)
+end
 
 """
     intersection(A, B)
