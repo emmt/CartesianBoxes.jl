@@ -8,11 +8,14 @@
 # This file is part of the `CartesianBoxes.jl` package which is licensed under
 # the MIT "Expat" License.
 #
-# Copyright (c) 2017-2021 Éric Thiébaut.
+# Copyright (c) 2017-2022 Éric Thiébaut.
 #
 
 __precompile__(true)
 
+"""
+`CartesianBoxes` extends `CartesianIndices`.
+"""
 module CartesianBoxes
 
 export
@@ -106,19 +109,31 @@ See also: [`boundingbox`](@ref), `CartesianIndices`, `CartesianIndex`,
 [`intersection`](@ref).
 
 """
-struct CartesianBox{N,R<:CartesianIndices{N}} <: AbstractArray{CartesianIndex{N},N}
-    inds::R
+struct CartesianBox{N,I<:NTuple{N,IndexRange{Int}}} <: AbstractArray{CartesianIndex{N},N}
+    indices::I
 end
+
+# Accessors.
+indices(R::CartesianBox) = getfield(R, :indices)
+indices(R::CartesianIndices) = getfield(R, :indices)
+indices(I::CartesianIndex) = Tuple(I)
+indices(I::NTuple{N,Integer}) where {N} = I
+
+# Fast conversion between CartesianIndices and CartesianBox.
+CartesianIndices(R::CartesianBox{N,I}) where {N,I} =
+    CartesianIndices{N,I}(indices(R))
+CartesianBox(R::CartesianIndices{N,I}) where {N,I} =
+    CartesianBox{N,I}(indices(R))
+
+# Other constructors.
 CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
 CartesianBox(inds::Tuple{Vararg{Union{<:Integer,IndexRange{<:Integer}}}}) =
         CartesianBox(CartesianIndices(inds))
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
-    CartesianBox(first.I, last.I)
+    CartesianBox(indices(first), indices(last))
 CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
     CartesianBox(map((i,j) -> i:j, first, last))
-
-CartesianIndices(B::CartesianBox) = B.inds
 
 """
     ranges(B) -> inds
@@ -127,7 +142,7 @@ yields the `N`-tuple of index ranges in the Cartesian box `B` (an instance of
 [`CartesianBox{N}`](@ref)).
 
 """
-ranges(B::CartesianBox) = CartesianIndices(B).indices
+ranges(B::CartesianBox) = indices(B)
 
 first(B::CartesianBox) = first(CartesianIndices(B))
 last(B::CartesianBox) = last(CartesianIndices(B))
@@ -136,17 +151,17 @@ axes(B::CartesianBox) = axes(CartesianIndices(B))
 
 isempty(B::CartesianBox) = isempty_(first(B), last(B))
 @inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
-    any(map(isless, last.I, first.I))
+    any(map(isless, indices(last), indices(first)))
 
 show(io::IO, ::MIME"text/plain", B::CartesianBox) = show(io, B)
 show(io::IO, B::CartesianBox) = begin
     print(io, "CartesianBox(")
-    print(io, ranges(B))
+    print(io, indices(B))
     print(io, ")")
 end
 
 view(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
-    view(A, ranges(B)...)
+    view(A, indices(B)...)
 
 function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
     empty = isempty(B)
@@ -154,8 +169,9 @@ function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
         throw(BoundsError("sub-region is not part of array"))
     C = Array{T}(undef, size(B))
     if ! empty
-        if any(i -> i != 1, first(B).I)
-            off = CartesianIndex(map(i -> i - 1, first(B).I))
+        Ifirst = first(B)
+        if any(i -> i != 1, indices(Ifirst))
+            off = CartesianIndex(map(i -> i - 1, indices(Ifirst)))
             @inbounds @simd for i in B
                 C[i - off] = A[i]
             end
@@ -169,7 +185,7 @@ function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
 end
 
 setindex!(A::AbstractArray{<:Any,N}, x, B::CartesianBox{N}) where {N} =
-    A[ranges(B)...] = x
+    A[indices(B)...] = x
 
 fill!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
     fill!(A, B, convert(T, x)::T)
@@ -190,9 +206,10 @@ IndexStyle(::Type{<:CartesianBox{N,R}}) where {N,R} = IndexStyle(R)
     getindex(CartesianIndices(B), I...)
 
 """
+    CartesianBoxable{N}
 
-`CartesianBoxable{N}` is a union of types (other than `CartesianBox{N}`) which
-can be automatically converted into a `CartesianBox{N}`.
+is a union of types (other than `CartesianBox{N}`) which can be automatically
+converted into a `CartesianBox{N}`.
 
 !!! note
     Although the constructor `CartesianBox` can be also applied to any instance
@@ -214,9 +231,9 @@ iterate(iter::CartesianBox, state) = iterate(CartesianIndices(iter), state)
 
 # Extend methods for fast SIMD iterations.
 simd_outer_range(iter::CartesianBox{0}) = iter
-simd_outer_range(iter::CartesianBox) = CartesianBox(tail(ranges(iter)))
+simd_outer_range(iter::CartesianBox) = CartesianBox(tail(indices(iter)))
 simd_inner_length(iter::CartesianBox{0}, ::CartesianIndex) = 1
-simd_inner_length(iter::CartesianBox, I::CartesianIndex) = length(ranges(iter)[1])
+simd_inner_length(iter::CartesianBox, I::CartesianIndex) = length(indices(iter)[1])
 simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
 @inline @propagate_inbounds function simd_index(iter::CartesianBox,
                                                 Ilast::CartesianIndex, I1::Int)
@@ -358,18 +375,19 @@ function boundingbox(pred,
     return CartesianBox(Imin, Imax)
 end
 
+# Provide equivalent methods for `typemin`, `typemax`, and `one` applied
+# to a Cartesian index with different names to avoid type piracy.
 @inline typemin_(::Type{<:CartesianIndex{N}}) where {N} =
     CartesianIndex(ntuple(i -> typemin(Int), Val(N)))
 @inline typemax_(::Type{<:CartesianIndex{N}}) where {N} =
     CartesianIndex(ntuple(i -> typemax(Int), Val(N)))
 
 one_(I::CartesianIndex) = one_(typeof(I))
-one_(T::Type{<:CartesianIndex}) =
-    @static if VERSION < v"1.1.0-rc1"
-        one(T)
-    else
-        oneunit(T)
-    end
+@static if VERSION < v"1.1.0-rc1"
+    one_(T::Type{<:CartesianIndex}) = one(T)
+else
+    one_(T::Type{<:CartesianIndex}) = oneunit(T)
+end
 
 """
     isnonzero(x)
