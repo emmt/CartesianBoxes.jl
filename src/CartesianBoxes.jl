@@ -23,8 +23,7 @@ export
     boundingbox,
     intersection,
     isnonemptypartof,
-    isnonzero,
-    ranges
+    isnonzero
 
 using Base: tail, @propagate_inbounds
 
@@ -113,7 +112,15 @@ struct CartesianBox{N,I<:NTuple{N,IndexRange{Int}}} <: AbstractArray{CartesianIn
     indices::I
 end
 
-# Accessors.
+"""
+    indices(A) -> inds
+
+yields an `N`-tuple of index ranges if `A` is an instance of
+[`CartesianBox{N}`](@ref) or of `CartesianIndices{N}`; yields an `N`-tuple of
+indices if `A` is an instance of `CartesianIndex{N}` or an `N`-tuple of
+integers.
+
+"""
 indices(R::CartesianBox) = getfield(R, :indices)
 indices(R::CartesianIndices) = getfield(R, :indices)
 indices(I::CartesianIndex) = Tuple(I)
@@ -135,14 +142,7 @@ CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
 CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
     CartesianBox(map((i,j) -> i:j, first, last))
 
-"""
-    ranges(B) -> inds
-
-yields the `N`-tuple of index ranges in the Cartesian box `B` (an instance of
-[`CartesianBox{N}`](@ref)).
-
-"""
-ranges(B::CartesianBox) = indices(B)
+@deprecate ranges(B::CartesianBox) indices(B) false
 
 first(B::CartesianBox) = first(CartesianIndices(B))
 last(B::CartesianBox) = last(CartesianIndices(B))

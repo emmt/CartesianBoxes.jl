@@ -1,5 +1,10 @@
 # User visible changes in `CartesianBoxes`
 
+## Branch 0.3
+
+* Method `ranges` has been deprecated.  Call `CartesianBoxes.indices` instead.
+
+
 ## Branch 0.2
 
 * Type `CartesianBox` is now a simple decoration wrapped around an instance of

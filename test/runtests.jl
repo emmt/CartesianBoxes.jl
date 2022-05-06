@@ -2,6 +2,7 @@ module TestingCartesianBoxes
 
 using Test
 using CartesianBoxes
+using CartesianBoxes: ranges
 
 # Deal with compatibility issues.
 import Base: CartesianIndices, axes
@@ -200,7 +201,8 @@ TYPES = (Float64, Float32)
             @test all(map(isequal, A[C], X))
             @test boundingbox(x -> x != zero(T) && x < typemax(T), A) == C
             @test boundingbox(x -> x != typemax(T), A, B) == C
-            inds = ranges(B)
+            inds = CartesianBoxes.indices(B)
+            @test (@test_deprecated ranges(B)) === inds
             @test boundingbox(x -> x != typemax(T), A, inds) == C
             V = view(A,C)
             @test all(map(isequal, V, X))
