@@ -124,6 +124,8 @@ indices(R::CartesianIndices) = getfield(R, :indices)
 indices(I::CartesianIndex) = Tuple(I)
 indices(I::NTuple{N,Integer}) where {N} = I
 
+Base.Tuple(R::CartesianBox) = indices(R)
+
 # Fast conversion between CartesianIndices and CartesianBox.
 Base.CartesianIndices(R::CartesianBox{N,I}) where {N,I} =
     CartesianIndices{N,I}(indices(R))

@@ -145,13 +145,14 @@ TYPES = (Float64, Float32)
         I1 = CartesianIndex(ntuple(i -> i, ndims(b)))
         @test indices(I1) === I1.I
         @test indices(b) == axes(b)
+        @test indices(b) == Tuple(b)
         @test (b + I0) == b
         @test (b - I0) == b
         @test (b + I0.I) == b
         @test (b - I0.I) == b
         for f in (+, -)
             @test f(b,I1) == CartesianBox(map((r,i) -> f(first(r),i):f(last(r),i),
-                                              axes(b), indices(I1)))
+                                              indices(b), indices(I1)))
         end
     end
 
