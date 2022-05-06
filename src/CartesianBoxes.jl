@@ -240,6 +240,28 @@ simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
     simd_index(CartesianIndices(iter), Ilast, I1)
 end
 
+# Increment a range.
+incr(rng::AbstractUnitRange, adj::Number) =
+    (first(rng) + adj):(last(rng) + adj)
+incr(rng::AbstractRange, adj::Number) =
+    (first(rng) + adj):step(rng):(last(rng) + adj)
+
+# Decrement a range.
+decr(rng::AbstractUnitRange, adj::Number) =
+    (first(rng) - adj):(last(rng) - adj)
+decr(rng::AbstractRange, adj::Number) =
+    (first(rng) - adj):step(rng):(last(rng) - adj)
+
+# Shifting of a CartesianBox.
+function Base.:(+)(R::CartesianBox{N},
+                   I::Union{NTuple{N,Integer},CartesianIndex{N}}) where {N}
+    CartesianBox(map((r,i) -> incr(r, i), indices(R), indices(I)))
+end
+function Base.:(-)(R::CartesianBox{N},
+                   I::Union{NTuple{N,Integer},CartesianIndex{N}}) where {N}
+    CartesianBox(map((r,i) -> decr(r, i), indices(R), indices(I)))
+end
+
 """
     intersect(CartesianBox, A, B)
 

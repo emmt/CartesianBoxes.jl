@@ -158,6 +158,12 @@ V = view(A, B)
 which yields a sub-array `V` sharing its elements with `A` in the region
 defined by `B`.
 
+### Shifting a CartesianBox
+
+Operations `B + I` and `B - I` can be used to shift `B`, an instance of
+`CartesianBox{N}`, by offset `I` specified as an instance of
+`CartesianIndex{N}` or as an `N`-tuple of integers.
+
 
 ### Exported or extended methods
 

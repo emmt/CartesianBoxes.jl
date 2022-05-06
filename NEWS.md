@@ -2,6 +2,10 @@
 
 ## Branch 0.3
 
+* Operations `B + I` and `B - I` are implemented to shift `B`, an instance of
+  `CartesianBox{N}`, by offset `I` specified as an instance of
+  `CartesianIndex{N}` or as an `N`-tuple of integers.
+
 * Method `intersection(A,B)` has been deprecated.  Call
   `intersect(CartesianBox,A,B)` instead.
 

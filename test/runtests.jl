@@ -2,7 +2,7 @@ module TestingCartesianBoxes
 
 using Test
 using CartesianBoxes
-using CartesianBoxes: ranges
+using CartesianBoxes: indices, ranges
 
 # Deal with compatibility issues.
 import Base: CartesianIndices, axes
@@ -140,6 +140,19 @@ TYPES = (Float64, Float32)
         @test CartesianIndices(b) == r
         @test CartesianIndices(CartesianBox(r)) === r
         @test CartesianBox(CartesianIndices(b)) === b
+
+        I0 = CartesianIndex(ntuple(i -> 0, ndims(b)))
+        I1 = CartesianIndex(ntuple(i -> i, ndims(b)))
+        @test indices(I1) === I1.I
+        @test indices(b) == axes(b)
+        @test (b + I0) == b
+        @test (b - I0) == b
+        @test (b + I0.I) == b
+        @test (b - I0.I) == b
+        for f in (+, -)
+            @test f(b,I1) == CartesianBox(map((r,i) -> f(first(r),i):f(last(r),i),
+                                              axes(b), indices(I1)))
+        end
     end
 
     @testset "Array indexing" for dims in SIZES, T in TYPES
