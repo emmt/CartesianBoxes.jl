@@ -47,6 +47,7 @@ can be constructed by:
     CartesianBox(CartesianIndex(istart,jstart,...), CartesianIndex(istop,jstop,...))
     CartesianBox((istart,jstart,...), (istop,jstop,...))
     CartesianBox((istart:[istep:]istop, jstart:[jstep:]jstop, ...))
+    CartesianBox(istart:[istep:]istop, jstart:[jstep:]jstop, ...)
 
 where `A` is an array (to define a region consisting in all the indices in the
 array), `istart`, `istop`, etc. are integers (to define a region from
@@ -135,6 +136,8 @@ CartesianBox(R::CartesianIndices{N,I}) where {N,I} =
 # Other constructors.
 CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
+CartesianBox(inds::Vararg{Union{<:Integer,IndexRange{<:Integer}}}) =
+        CartesianBox(CartesianIndices(inds))
 CartesianBox(inds::Tuple{Vararg{Union{<:Integer,IndexRange{<:Integer}}}}) =
         CartesianBox(CartesianIndices(inds))
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =

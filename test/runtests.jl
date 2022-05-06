@@ -141,18 +141,26 @@ TYPES = (Float64, Float32)
         @test CartesianIndices(CartesianBox(r)) === r
         @test CartesianBox(CartesianIndices(b)) === b
 
+        @test indices(b) == axes(b)
+        @test indices(b) == Tuple(b)
+        @test CartesianBox(indices(b)) === b
+        @test CartesianBox(indices(b)...) === b
+        @test CartesianBox(first(b), last(b)) == b
+
         I0 = CartesianIndex(ntuple(i -> 0, ndims(b)))
         I1 = CartesianIndex(ntuple(i -> i, ndims(b)))
         @test indices(I1) === I1.I
-        @test indices(b) == axes(b)
-        @test indices(b) == Tuple(b)
         @test (b + I0) == b
         @test (b - I0) == b
         @test (b + I0.I) == b
         @test (b - I0.I) == b
         for f in (+, -)
+            c = f(b,I1)
             @test f(b,I1) == CartesianBox(map((r,i) -> f(first(r),i):f(last(r),i),
                                               indices(b), indices(I1)))
+            @test CartesianBox(indices(c)) === c
+            @test CartesianBox(indices(c)...) === c
+            @test CartesianBox(first(c), last(c)) == c
         end
     end
 
@@ -229,7 +237,7 @@ TYPES = (Float64, Float32)
     end
 
     @testset "Miscellaneous" begin
-        B = CartesianBox((1:3, -7:6))
+        B = CartesianBox(1:3, -7:6)
         @test eachindex(IndexCartesian(), B) == B
         Z = CartesianBox(())
         @test stupidcount(Z) == 1
