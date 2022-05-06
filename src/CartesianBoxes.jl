@@ -21,7 +21,6 @@ module CartesianBoxes
 export
     CartesianBox,
     boundingbox,
-    intersection,
     isnonemptypartof,
     isnonzero
 
@@ -105,7 +104,7 @@ to only access the indices of the Cartesian box `B` if they are all valid for
 `A`.
 
 See also: [`boundingbox`](@ref), `CartesianIndices`, `CartesianIndex`,
-[`intersection`](@ref).
+[`intersect`](@ref).
 
 """
 struct CartesianBox{N,I<:NTuple{N,IndexRange{Int}}} <: AbstractArray{CartesianIndex{N},N}
@@ -243,7 +242,7 @@ simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
 end
 
 """
-    intersection(A, B)
+    intersect(CartesianBox, A, B)
 
 yields the Cartesian box given by the intersection of the Cartesian regions
 defined by `A` and `B`.  In this context, a Cartesian region can specified by a
@@ -255,14 +254,17 @@ least one of `A` or `B` is a Cartesian box.
 
 See also: [`CartesianBox`](@ref), [`isnonemptypartof`](@ref).
 
-"""
-intersection(A::CartesianBox{N}, B::CartesianBox{N}) where {N} = A ∩ B
-intersection(A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
+""" intersect
+
+intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBox{N}) where {N} = A ∩ B
+intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
     A ∩ CartesianBox(B)
-intersection(A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
+intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
     CartesianBox(A) ∩ B
-intersection(A::CartesianBoxable{N}, B::CartesianBoxable{N}) where {N} =
+intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBoxable{N}) where {N} =
     CartesianBox(A) ∩ CartesianBox(B)
+
+@deprecate intersection(A, B) intersect(CartesianBox, A, B) false
 
 # Override ∩(A,B) and ⊆(A,B) when at least one of A or B is a Cartesian box,
 # the other being boxable or an abstract array.
@@ -296,7 +298,7 @@ When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B` or
 
     isempty(A) || isnonemptypartof(A, B)
 
-See also: [`CartesianBox`](@ref), [`intersection`](@ref).
+See also: [`CartesianBox`](@ref), [`intersect`](@ref).
 
 """
 function isnonemptypartof(A::Union{CartesianBoxable{N},CartesianBox{N}},
@@ -326,7 +328,7 @@ only consider a sub-region `B` of `A` (`B` can be a `CartesianBox`, a
     The algorithm is pretty silly for now and could be made faster than
     `O(length(A))`.
 
-See also: [`CartesianBox`](@ref), [`intersection`](@ref), [`isnonzero`](@ref).
+See also: [`CartesianBox`](@ref), [`intersect`](@ref), [`isnonzero`](@ref).
 
 """
 boundingbox(A::AbstractArray{Bool}) = boundingbox(identity, A)

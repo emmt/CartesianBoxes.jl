@@ -164,7 +164,7 @@ defined by `B`.
 The call:
 
 ```julia
-intersection(A, B)
+intersect(CartesianBox, A, B)
 ```
 
 yields the Cartesian box given by the intersection of the Cartesian regions
@@ -218,6 +218,7 @@ The easiest way to install `CartesianBoxes` is via Julia registry
 
 ```julia
 using Pkg
+pkg"registry add General" # if you have not yet any registries
 pkg"registry add https://github.com/emmt/EmmtRegistry"
 pkg"add CartesianBoxes"
 ```

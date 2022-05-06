@@ -2,6 +2,9 @@
 
 ## Branch 0.3
 
+* Method `intersection(A,B)` has been deprecated.  Call
+  `intersect(CartesianBox,A,B)` instead.
+
 * Method `ranges` has been deprecated.  Call `CartesianBoxes.indices` instead.
 
 
