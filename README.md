@@ -72,6 +72,17 @@ CartesianIndices(B) === R
 
 which is always true.
 
+To retrieve the `N`-tuple of ranges that constitute a Cartesian box `B`, call
+`Tuple(B)`.  This is not the same as `axes(B)` which yields the ranges to index
+`B` itself.
+
+
+```julia
+B = CartesianBox(2:7, 3:5)
+Tuple(B) -> (2:7, 3:5)
+axes(B) -> (Base.OneTo(6),Base.OneTo(3))
+```
+
 
 ### Fast (and safe) iterations
 
@@ -186,14 +197,14 @@ isnonemptypartof(A, B)
 ```
 
 yields whether the region defined by `A` is nonempty and a valid part of the
-region defined by `B` or of the contents of `B` if it is an array.  If this
-method returns `false`, you may call `isempty(A)` to check whether `A` is
-empty.  When at least one of `A` or `B` is a Cartesian box, the expression
-`A ⊆ B`, or `issubset(A,B)`, is equivalent to:
+region defined by `B` or of the contents of `B` if `B` is an array.  This is
+equivalent to:
 
 ```julia
-isempty(A) || isnonemptypartof(A, B)
+!isempty(CartesianBox(A)) && (CartesianBox(A) ⊆ CartesianBox(B))
 ```
+
+except that `A` may not be an array.
 
 The call:
 

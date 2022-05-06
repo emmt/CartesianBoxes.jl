@@ -147,14 +147,10 @@ CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
 
 @deprecate ranges(B::CartesianBox) indices(B) false
 
-Base.first(B::CartesianBox) = first(CartesianIndices(B))
-Base.last(B::CartesianBox) = last(CartesianIndices(B))
-Base.size(B::CartesianBox) = size(CartesianIndices(B))
-Base.axes(B::CartesianBox) = axes(CartesianIndices(B))
-
-isempty(B::CartesianBox) = isempty_(first(B), last(B))
-@inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
-    any(map(isless, indices(last), indices(first)))
+Base.first(B::CartesianBox) = CartesianIndex(map(first, indices(B)))
+Base.last(B::CartesianBox) = CartesianIndex(map(last, indices(B)))
+Base.size(B::CartesianBox) = map(length, indices(B))
+Base.axes(B::CartesianBox) = map(Base.axes1, indices(B))
 
 Base.show(io::IO, ::MIME"text/plain", B::CartesianBox) = show(io, B)
 Base.show(io::IO, B::CartesianBox) = begin
@@ -267,30 +263,15 @@ function Base.:(-)(R::CartesianBox{N},
     CartesianBox(map((r,i) -> decr(r, i), indices(R), indices(I)))
 end
 
-"""
-    intersect(CartesianBox, A, B)
+Base.isempty(B::CartesianBox) = prod(map(isempty, indices(B)))
 
-yields the Cartesian box given by the intersection of the Cartesian regions
-defined by `A` and `B`.  In this context, a Cartesian region can specified by a
-Cartesian box, a list of integer valued ranges, a list of dimensions, or an
-instance of `CartesianIndices`.
+# Extend ∩ operator (\cap-tab) for Cartesian boxes.
+Base.intersect(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    CartesianBox(map(intersect, indices(A), indices(B)))
 
-This method is equivalent to `intersect(A,B)`, or `A ∩ B` for short, when at
-least one of `A` or `B` is a Cartesian box.
-
-See also: [`CartesianBox`](@ref), [`isnonemptypartof`](@ref).
-
-""" intersect
-
-intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBox{N}) where {N} = A ∩ B
-intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
-    A ∩ CartesianBox(B)
-intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
-    CartesianBox(A) ∩ B
-intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBoxable{N}) where {N} =
-    CartesianBox(A) ∩ CartesianBox(B)
-
-@deprecate intersection(A, B) intersect(CartesianBox, A, B) false
+# Extend ⊆ operator (\subseteq-tab) for Cartesian boxes.
+Base.issubset(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    prod(map(issubset, indices(A), indices(B)))
 
 # Override ∩(A,B) and ⊆(A,B) when at least one of A or B is a Cartesian box,
 # the other being boxable or an abstract array.
@@ -306,39 +287,59 @@ for f in (:intersect, :issubset)
             $f(CartesianBox(A), B)
     end
 end
-@inline intersect(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
-    CartesianBox(max(first(A), first(B)), min(last(A), last(B)))
-@inline issubset(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
-    isempty(A) || isnonemptypartof(A,B)
+
+"""
+    intersect(CartesianBox, A, B)
+
+yields the Cartesian box given by the intersection of the Cartesian regions
+defined by `A` and `B`.  In this context, a Cartesian region can specified by a
+Cartesian box, a list of integer valued ranges, a list of dimensions, or an
+instance of `CartesianIndices`.
+
+This method is equivalent to `intersect(A,B)`, or `A ∩ B` for short, when at
+least one of `A` or `B` is a Cartesian box.
+
+See also: [`CartesianBox`](@ref), [`isnonemptypartof`](@ref).
+
+""" intersect
+
+@deprecate intersection(A, B) intersect(CartesianBox, A, B) false
+
+intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBox{N}) where {N} = A ∩ B
+intersect(::Type{CartesianBox}, A::CartesianBox{N}, B::CartesianBoxable{N}) where {N} =
+    A ∩ CartesianBox(B)
+intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
+    CartesianBox(A) ∩ B
+intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBoxable{N}) where {N} =
+    CartesianBox(A) ∩ CartesianBox(B)
 
 """
     isnonemptypartof(A, B)
 
 yields whether the region defined by `A` is nonempty and a valid part of the
-region defined by `B` or of the contents of `B` if it is an array.  If this
-method returns `false`, you may call `isempty(A)` to check whether `A` is
-empty.
+region defined by `B` or of the contents of `B` if `B` is an array.  This is
+equivalent to:
 
-When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B` or
-`issubset(A,B)` is equivalent to:
+    !isempty(CartesianBox(A)) && (CartesianBox(A) ⊆ CartesianBox(B))
 
-    isempty(A) || isnonemptypartof(A, B)
+except that `A` may not be an array.
 
-See also: [`CartesianBox`](@ref), [`intersect`](@ref).
+See also: [`CartesianBox`](@ref), [`issubset`](@ref).
 
 """
 function isnonemptypartof(A::Union{CartesianBoxable{N},CartesianBox{N}},
                           B::Union{CartesianBoxable{N},
                                    AbstractArray{<:Any,N}}) where {N}
-    isnonemptypartof(A, CartesianBox(B))
+    A_box = CartesianBox(A)
+    if isempty(A_box)
+        return false
+    else
+        return A_box ⊆ CartesianBox(B)
+    end
 end
 
-isnonemptypartof(A::CartesianBoxable{N}, B::CartesianBox{N}) where {N} =
-    isnonemptypartof(CartesianBox(A), B)
-
-@inline isnonemptypartof(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
-    first(B) ≤ first(A) ≤ last(A) ≤ last(B)
-
+isnonemptypartof(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
+    !isemppty(A) && issubset(A, B)
 
 """
     boundingbox([pred,] A [, B])
@@ -402,6 +403,9 @@ function boundingbox(pred,
     end
     return CartesianBox(Imin, Imax)
 end
+
+@inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
+    any(map(isless, indices(last), indices(first)))
 
 # Provide equivalent methods for `typemin`, `typemax`, and `one` applied
 # to a Cartesian index with different names to avoid type piracy.

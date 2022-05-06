@@ -116,7 +116,20 @@ SIZES = ((), (45,), (21,22), (11,12,13), (5,6,7,8))
 TYPES = (Float64, Float32)
 
 @testset "CartesianBoxes" begin
-    @testset "Basic operations" for dims in SIZES, T in TYPES
+    @testset "Basic operations" begin
+        for inds in ((Base.OneTo(5), 2:8),
+                     (-1:2:7, 0:8, Base.OneTo(4)))
+            B = CartesianBox(inds...)
+            @test ndims(B) == length(inds)
+            @test Tuple(B) === inds
+            @test axes(B) === map(x -> Base.OneTo(length(x)), inds)
+            @test size(B) == map(length, inds)
+            @test length(B) == prod(map(length, inds))
+            @test isempty(B) == (length(B) == 0)
+        end
+    end
+
+    @testset "Cartesian boxes of arrays" for dims in SIZES, T in TYPES
         A = Array{T}(undef, dims)
         r = CartesianIndices(A)
         b = CartesianBox(A)
@@ -126,6 +139,7 @@ TYPES = (Float64, Float32)
         @test length(b) == length(r)
         @test size(b) == size(r)
         @test axes(b) == axes(r)
+        @test indices(b) == indices(r)
         for d in 1:ndims(b)
             @test size(b,d) == size(r,d)
             @test axes(b,d) == axes(r,d)
@@ -141,8 +155,7 @@ TYPES = (Float64, Float32)
         @test CartesianIndices(CartesianBox(r)) === r
         @test CartesianBox(CartesianIndices(b)) === b
 
-        @test indices(b) == axes(b)
-        @test indices(b) == Tuple(b)
+        @test indices(b) === Tuple(b)
         @test CartesianBox(indices(b)) === b
         @test CartesianBox(indices(b)...) === b
         @test CartesianBox(first(b), last(b)) == b
