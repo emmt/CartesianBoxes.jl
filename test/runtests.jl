@@ -112,8 +112,8 @@ function stupidcount(iter)
     return n
 end
 
-SIZES = ((), (45,), (21,22), (11,12,13), (5,6,7,8))
-TYPES = (Float64, Float32)
+SIZES = ((), (45,), (21,22), (5,6,7,8))
+TYPES = (Float32, )
 
 @testset "CartesianBoxes" begin
     @testset "Basic operations" begin
