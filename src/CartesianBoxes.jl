@@ -26,10 +26,9 @@ export
 
 using Base: tail, @propagate_inbounds
 
-import Base: CartesianIndices, IndexStyle, axes, eachindex, isempty,
-    iterate, first, last, ndims, eltype, length, size, view,
-    intersect, issubset, getindex, setindex!, fill!, show
-import Base: simd_outer_range, simd_inner_length, simd_index
+import Base:
+    intersect, issubset,
+    simd_outer_range, simd_inner_length, simd_index
 
 # Starting with Julia-1.6.0-beta1, Cartesian indices can have non-unit step.
 const IndexRange{I} = @static if VERSION < v"1.6.0-beta1"
@@ -126,7 +125,7 @@ indices(I::CartesianIndex) = Tuple(I)
 indices(I::NTuple{N,Integer}) where {N} = I
 
 # Fast conversion between CartesianIndices and CartesianBox.
-CartesianIndices(R::CartesianBox{N,I}) where {N,I} =
+Base.CartesianIndices(R::CartesianBox{N,I}) where {N,I} =
     CartesianIndices{N,I}(indices(R))
 CartesianBox(R::CartesianIndices{N,I}) where {N,I} =
     CartesianBox{N,I}(indices(R))
@@ -143,26 +142,26 @@ CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
 
 @deprecate ranges(B::CartesianBox) indices(B) false
 
-first(B::CartesianBox) = first(CartesianIndices(B))
-last(B::CartesianBox) = last(CartesianIndices(B))
-size(B::CartesianBox) = size(CartesianIndices(B))
-axes(B::CartesianBox) = axes(CartesianIndices(B))
+Base.first(B::CartesianBox) = first(CartesianIndices(B))
+Base.last(B::CartesianBox) = last(CartesianIndices(B))
+Base.size(B::CartesianBox) = size(CartesianIndices(B))
+Base.axes(B::CartesianBox) = axes(CartesianIndices(B))
 
 isempty(B::CartesianBox) = isempty_(first(B), last(B))
 @inline isempty_(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     any(map(isless, indices(last), indices(first)))
 
-show(io::IO, ::MIME"text/plain", B::CartesianBox) = show(io, B)
-show(io::IO, B::CartesianBox) = begin
+Base.show(io::IO, ::MIME"text/plain", B::CartesianBox) = show(io, B)
+Base.show(io::IO, B::CartesianBox) = begin
     print(io, "CartesianBox(")
     print(io, indices(B))
     print(io, ")")
 end
 
-view(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
+Base.view(A::AbstractArray{<:Any,N}, B::CartesianBox{N}) where {N} =
     view(A, indices(B)...)
 
-function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
+function Base.getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
     empty = isempty(B)
     empty || isnonemptypartof(B, A) ||
         throw(BoundsError("sub-region is not part of array"))
@@ -183,13 +182,13 @@ function getindex(A::AbstractArray{T,N}, B::CartesianBox{N}) where {T,N}
     return C
 end
 
-setindex!(A::AbstractArray{<:Any,N}, x, B::CartesianBox{N}) where {N} =
+Base.setindex!(A::AbstractArray{<:Any,N}, x, B::CartesianBox{N}) where {N} =
     A[indices(B)...] = x
 
-fill!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
+Base.fill!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
     fill!(A, B, convert(T, x)::T)
-function fill!(A::AbstractArray{T,N},
-               B::CartesianBox{N}, x::T) where {T,N}
+function Base.fill!(A::AbstractArray{T,N},
+                    B::CartesianBox{N}, x::T) where {T,N}
     if ! isempty(B)
         isnonemptypartof(B, A) ||
             throw(BoundsError("sub-region is not part of array"))
@@ -200,8 +199,8 @@ function fill!(A::AbstractArray{T,N},
     return A
 end
 
-IndexStyle(::Type{<:CartesianBox{N,R}}) where {N,R} = IndexStyle(R)
-@inline @propagate_inbounds getindex(B::CartesianBox, I...) =
+Base.IndexStyle(::Type{<:CartesianBox{N,R}}) where {N,R} = IndexStyle(R)
+@inline @propagate_inbounds Base.getindex(B::CartesianBox, I...) =
     getindex(CartesianIndices(B), I...)
 
 """
@@ -222,11 +221,11 @@ const CartesianBoxable{N} = Union{CartesianIndices{N},
                                   NTuple{N,Integer}}
 
 # Extend eachindex() method.
-eachindex(::IndexCartesian, B::CartesianBox) = B
+Base.eachindex(::IndexCartesian, B::CartesianBox) = B
 
 # Make CartesianBox iterable.
-iterate(iter::CartesianBox) = iterate(CartesianIndices(iter))
-iterate(iter::CartesianBox, state) = iterate(CartesianIndices(iter), state)
+Base.iterate(iter::CartesianBox) = iterate(CartesianIndices(iter))
+Base.iterate(iter::CartesianBox, state) = iterate(CartesianIndices(iter), state)
 
 # Extend methods for fast SIMD iterations.
 simd_outer_range(iter::CartesianBox{0}) = iter
