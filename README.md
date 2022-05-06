@@ -13,10 +13,9 @@ specifically extend methods without introducing unexpected behaviors in other
 Julia modules.
 
 For multi-dimensional loops, instances of `CartesianBox{N}` are as fast as
-`CartesianIndices{N}`.  They can thus
-be used as a *fast* and *portable* replacement (see [*Rationale*](#rationale)
-below) of these different representations of rectangular multi-dimensional
-regions.
+`CartesianIndices{N}`.  They can thus be used as a *fast* and *portable*
+replacement (see [*Rationale*](#rationale) below) of these different
+representations of rectangular multi-dimensional regions.
 
 
 ## Usage
@@ -214,33 +213,24 @@ tuple of integer valued unit ranges).
 
 ## Installation
 
-`CartesianBoxes.jl` is not yet an
-[official Julia package](https://pkg.julialang.org/) so you have to clone the
-repository to install the package:
+The easiest way to install `CartesianBoxes` is via Julia registry
+[`EmmtRegistry`](https://github.com/emmt/EmmtRegistry):
 
 ```julia
-Pkg.clone("https://github.com/emmt/CartesianBoxes.jl.git")
+using Pkg
+pkg"registry add https://github.com/emmt/EmmtRegistry"
+pkg"add CartesianBoxes"
 ```
-
-There is nothing to build so no needs to call `Pkg.build("CartesianBoxes")`.
-
-Later, it is sufficient to do:
-
-```julia
-Pkg.update("CartesianBoxes")
-```
-
-to pull the latest version.
 
 
 ## Rationale
 
-In the past, rectangular regions of `N`-dimensional indices were defined by
-instances of `CartesianRange{CardinalIndex{N}}` in Julia and have a number of
-related methods which make coding [multi-dimensional
+For pre-0.7 Julia versions, rectangular regions of `N`-dimensional indices were
+defined by instances of `CartesianRange{CardinalIndex{N}}` in Julia and have a
+number of related methods which make coding [multi-dimensional
 algorithms](https://julialang.org/blog/2016/02/iteration) not only *easy* but
-also *very efficient*.  Recent Julia versions (≥ 0.7) introduced a change in
-the representation of such sets of multi-dimensional indices which are now
+also *very efficient*.  More recent Julia versions (≥ 0.7) introduced a change
+in the representation of such sets of multi-dimensional indices which are now
 called
 [`CartesianIndices{N}`](https://github.com/JuliaLang/julia/issues/20974).
 There have been a few changes in the API but, in general, it is sufficient to
