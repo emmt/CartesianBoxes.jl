@@ -37,6 +37,12 @@ else
     OrdinalRange{I,I}
 end
 
+# Method to convert an argument (of CartesianBox constructor) to an index
+# range.
+to_index_range(x::IndexRange{Int}) = x
+to_index_range(x::IndexRange{<:Integer}) = convert(IndexRange{Int}, x)
+to_index_range(x::Integer) = Base.OneTo{Int}(x)
+
 """
 
 `CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
@@ -137,13 +143,13 @@ CartesianBox(R::CartesianIndices{N,I}) where {N,I} =
 CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
 CartesianBox(inds::Vararg{Union{Integer,IndexRange{<:Integer}}}) =
-        CartesianBox(CartesianIndices(inds))
-CartesianBox(inds::Tuple{Vararg{Union{Integer,IndexRange{<:Integer}}}}) =
-        CartesianBox(CartesianIndices(inds))
+        CartesianBox(inds)
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     CartesianBox(indices(first), indices(last))
 CartesianBox(first::NTuple{N,Integer}, last::NTuple{N,Integer}) where {N} =
     CartesianBox(map((i,j) -> i:j, first, last))
+CartesianBox(inds::Tuple{Vararg{Union{Integer,IndexRange{<:Integer}}}}) =
+        CartesianBox(map(to_index_range, inds))
 
 @deprecate ranges(B::CartesianBox) indices(B) false
 
@@ -200,7 +206,8 @@ function Base.fill!(A::AbstractArray{T,N},
     return A
 end
 
-Base.IndexStyle(::Type{<:CartesianBox{N,R}}) where {N,R} = IndexStyle(R)
+Base.IndexStyle(::Type{<:CartesianBox{N,R}}) where {N,R} =
+    IndexStyle(CartesianIndices{N,R})
 @inline @propagate_inbounds Base.getindex(B::CartesianBox, I...) =
     getindex(CartesianIndices(B), I...)
 

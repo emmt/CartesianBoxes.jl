@@ -162,6 +162,11 @@ const TYPES = (Float32, )
         @test CartesianBox(indices(b)) === b
         @test CartesianBox(indices(b)...) === b
         @test CartesianBox(first(b), last(b)) == b
+        flag = true
+        for i in eachindex(r, b)
+            flag &= (r[i] == b[i])
+        end
+        @test flag
 
         I0 = CartesianIndex(ntuple(i -> 0, ndims(b)))
         I1 = CartesianIndex(ntuple(i -> i, ndims(b)))
