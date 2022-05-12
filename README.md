@@ -3,7 +3,6 @@
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Build Status](https://github.com/emmt/CartesianBoxes.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/emmt/CartesianBoxes.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/emmt/CartesianBoxes.jl?branch=master)](https://ci.appveyor.com/project/emmt/CartesianBoxes-jl/branch/master)
-[![Coverage Status](https://coveralls.io/repos/github/emmt/CartesianBoxes.jl/badge.svg?branch=master)](https://coveralls.io/github/emmt/CartesianBoxes.jl?branch=master)
 [![codecov.io](http://codecov.io/github/emmt/CartesianBoxes.jl/coverage.svg?branch=master)](http://codecov.io/github/emmt/CartesianBoxes.jl?branch=master)
 
 This module implements `CartesianBox{N}` to define rectangular regions of
