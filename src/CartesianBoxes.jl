@@ -136,9 +136,9 @@ CartesianBox(R::CartesianIndices{N,I}) where {N,I} =
 # Other constructors.
 CartesianBox(B::CartesianBox) = B
 CartesianBox(A::AbstractArray) = CartesianBox(axes(A))
-CartesianBox(inds::Vararg{Union{<:Integer,IndexRange{<:Integer}}}) =
+CartesianBox(inds::Vararg{Union{Integer,IndexRange{<:Integer}}}) =
         CartesianBox(CartesianIndices(inds))
-CartesianBox(inds::Tuple{Vararg{Union{<:Integer,IndexRange{<:Integer}}}}) =
+CartesianBox(inds::Tuple{Vararg{Union{Integer,IndexRange{<:Integer}}}}) =
         CartesianBox(CartesianIndices(inds))
 CartesianBox(first::CartesianIndex{N}, last::CartesianIndex{N}) where {N} =
     CartesianBox(indices(first), indices(last))
