@@ -112,13 +112,16 @@ function stupidcount(iter)
     return n
 end
 
-SIZES = ((), (45,), (21,22), (5,6,7,8))
-TYPES = (Float32, )
+const SIZES = ((), (45,), (21,22), (5,6,7,8))
+const TYPES = (Float32, )
 
 @testset "CartesianBoxes" begin
     @testset "Basic operations" begin
-        for inds in ((Base.OneTo(5), 2:8),
-                     (-1:2:7, 0:8, Base.OneTo(4)))
+        for inds in (VERSION < v"1.6.0-beta1"
+                     ? ((Base.OneTo(5), 2:8),
+                        (-1:7, 0:8, Base.OneTo(4)))
+                     : ((Base.OneTo(5), 2:8),
+                        (-1:2:7, 0:8, Base.OneTo(4))))
             B = CartesianBox(inds...)
             @test ndims(B) == length(inds)
             @test Tuple(B) === inds
