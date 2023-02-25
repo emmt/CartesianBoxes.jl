@@ -44,9 +44,10 @@ to_index_range(x::IndexRange{<:Integer}) = convert(IndexRange{Int}, x)
 to_index_range(x::Integer) = Base.OneTo{Int}(x)
 
 """
+    CartesianBox{N}
 
-`CartesianBox{N}` defines a rectangular region of `N`-dimensional indices and
-can be constructed by:
+defines a rectangular region of `N`-dimensional indices and can be constructed
+by:
 
     CartesianBox(A)
     CartesianBox(axes(A))
@@ -57,16 +58,16 @@ can be constructed by:
 
 where `A` is an array (to define a region consisting in all the indices in the
 array), `istart`, `istop`, etc. are integers (to define a region from
-`(istart,jstart,...)` to `(istop,jstop,...)`.  Starting with Julia 1.6, a
+`(istart,jstart,...)` to `(istop,jstop,...)`. Starting with Julia 1.6, a
 non-unit step `istep`, `jstep`, etc. may also be specified.
 
 `CartesianBox(size(A))` yields a Cartesian region of the same size as `A` but
-whose indices all start at 1.  In most cases, `CartesianBox(axes(A))` is more
-likely to do the right thing.  In fact, `CartesianBox(A)` is equivalent to
+whose indices all start at 1. In most cases, `CartesianBox(axes(A))` is more
+likely to do the right thing. In fact, `CartesianBox(A)` is equivalent to
 `CartesianBox(axes(A))`.
 
 An instance of `CartesianBox` can also be constructed from an instance of
-`CartesianIndices` and conversely.  The conversion is lossless in the sense of
+`CartesianIndices` and conversely. The conversion is lossless in the sense of
 the following example:
 
     B = CartesianBox(...)
@@ -84,7 +85,7 @@ indices of the rectangular region defined by `B`.
 
 When at least one of `A` or `B` is a Cartesian box, the expression `A ∩ B`, or
 equivalently `intersect(A,B)`, yields the Cartesian box contining all indices
-in `A` and `B`.  This may be used to write safe loops like:
+in `A` and `B`. This may be used to write safe loops like:
 
     A = ...               # some array
     B = CartesianBox(...) # some region of interest
@@ -96,7 +97,7 @@ to operate on the indices of the Cartesian box `B` that are valid for `A`.
 
 When at least one of `A` or `B` is a Cartesian box, the expression `A ⊆ B`, or
 equivalently `intersect(A,B)`, yields whether all Cartesian indices defined by
-`A` are also indices of `B`.  This may be used as:
+`A` are also indices of `B`. This may be used as:
 
     A = ...               # some array
     B = CartesianBox(...) # some region of interest
@@ -248,27 +249,44 @@ simd_index(iter::CartesianBox{0}, ::CartesianIndex, I1::Int) = first(iter)
     simd_index(CartesianIndices(iter), Ilast, I1)
 end
 
-# Increment a range.
+# Increment a range, this is the same as `rng .+ adj`.
 incr(rng::AbstractUnitRange, adj::Number) =
     (first(rng) + adj):(last(rng) + adj)
 incr(rng::AbstractRange, adj::Number) =
     (first(rng) + adj):step(rng):(last(rng) + adj)
+incr(adj::Number, rng::AbstractRange) = incr(rng, adj)
 
-# Decrement a range.
+# Decrement a range, this is the same as `rng .- adj`.
 decr(rng::AbstractUnitRange, adj::Number) =
     (first(rng) - adj):(last(rng) - adj)
 decr(rng::AbstractRange, adj::Number) =
     (first(rng) - adj):step(rng):(last(rng) - adj)
 
-# Shifting of a CartesianBox.
-function Base.:(+)(R::CartesianBox{N},
-                   I::Union{NTuple{N,Integer},CartesianIndex{N}}) where {N}
-    CartesianBox(map((r,i) -> incr(r, i), indices(R), indices(I)))
-end
-function Base.:(-)(R::CartesianBox{N},
-                   I::Union{NTuple{N,Integer},CartesianIndex{N}}) where {N}
-    CartesianBox(map((r,i) -> decr(r, i), indices(R), indices(I)))
-end
+# Negate and adjust a range, this is the same as `adj .- rng` except that the
+# step remains the same.
+decr(adj::Number, rng::AbstractUnitRange) =
+    (adj - last(rng)):(adj - first(rng))
+decr(adj::Number; rng::AbstractRange) =
+    (adj - last(rng)):step(rng):(adj - first(rng))
+
+# Negate a range, this is the same as `-rng` except that the step remain the
+# same.
+negate(rng::AbstractUnitRange) = (-last(rng)):(-first(rng))
+negate(rng::AbstractRange) = (-last(rng)):step(rng):(-first(rng))
+
+const CartesianOffset{N} = Union{NTuple{N,Integer},CartesianIndex{N}}
+
+# Shifting of and negating a CartesianBox.
+Base.:(+)(I::CartesianOffset{N}, R::CartesianBox{N}) where {N} = R + I
+Base.:(+)(R::CartesianBox{N}, I::CartesianOffset{N}) where {N} =
+    CartesianBox(map(incr, indices(R), indices(I)))
+
+Base.:(-)(R::CartesianBox{N}, I::CartesianOffset{N}) where {N} =
+    CartesianBox(map(decr, indices(R), indices(I)))
+Base.:(-)(I::CartesianOffset{N}, R::CartesianBox{N}) where {N} =
+    CartesianBox(map(decr, indices(I), indices(R)))
+
+Base.:(-)(R::CartesianBox{N}) where {N} = CartesianBox(map(negate, indices(R)))
 
 Base.isempty(B::CartesianBox) = prod(map(isempty, indices(B)))
 
@@ -299,7 +317,7 @@ end
     intersect(CartesianBox, A, B)
 
 yields the Cartesian box given by the intersection of the Cartesian regions
-defined by `A` and `B`.  In this context, a Cartesian region can specified by a
+defined by `A` and `B`. In this context, a Cartesian region can specified by a
 Cartesian box, a list of integer valued ranges, a list of dimensions, or an
 instance of `CartesianIndices`.
 
@@ -324,7 +342,7 @@ intersect(::Type{CartesianBox}, A::CartesianBoxable{N}, B::CartesianBoxable{N}) 
     isnonemptypartof(A, B)
 
 yields whether the region defined by `A` is nonempty and a valid part of the
-region defined by `B` or of the contents of `B` if `B` is an array.  This is
+region defined by `B` or of the contents of `B` if `B` is an array. This is
 equivalent to:
 
     !isempty(CartesianBox(A)) && (CartesianBox(A) ⊆ CartesianBox(B))
@@ -352,14 +370,14 @@ isnonemptypartof(A::CartesianBox{N}, B::CartesianBox{N}) where {N} =
     boundingbox([pred,] A [, B])
 
 yields the bounding-box of the elements in array `A` for which the predicate
-function `pred` is true.  If the predicate function `pred` is omitted, the
+function `pred` is true. If the predicate function `pred` is omitted, the
 result is the bounding-box of non-zero values in array `A` or of the `true`
-values in `A` if its elements are of type `Bool`.  Optional argument `B` is to
+values in `A` if its elements are of type `Bool`. Optional argument `B` is to
 only consider a sub-region `B` of `A` (`B` can be a `CartesianBox`, a
 `CartesianIndices`, or a tuple of integer valued unit ranges).
 
 !!! warning
-    The algorithm is pretty silly for now and could be made faster than
+    The algorithm is pretty naive for now and could be made faster than
     `O(length(A))`.
 
 See also: [`CartesianBox`](@ref), [`intersect`](@ref), [`isnonzero`](@ref).
