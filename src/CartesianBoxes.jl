@@ -24,6 +24,7 @@ export
     isnonemptypartof,
     isnonzero
 
+using AsType
 using Base: tail, @propagate_inbounds
 
 import Base:
@@ -194,7 +195,8 @@ Base.setindex!(A::AbstractArray{<:Any,N}, x, B::CartesianBox{N}) where {N} =
     A[indices(B)...] = x
 
 Base.fill!(A::AbstractArray{T,N}, B::CartesianBox{N}, x) where {T,N} =
-    fill!(A, B, convert(T, x)::T)
+    fill!(A, B, as(T, x))
+
 function Base.fill!(A::AbstractArray{T,N},
                     B::CartesianBox{N}, x::T) where {T,N}
     if ! isempty(B)
