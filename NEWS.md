@@ -1,5 +1,15 @@
 # User visible changes in `CartesianBoxes`
 
+## Version 0.3.5
+
+- `TypeUtils` replaces `AsType`.
+
+
+## Version 0.3.4
+
+- Use `AsType` package.
+
+
 ## Branch 0.3
 
 * Operations `B + I` and `B - I` are implemented to shift `B`, an instance of

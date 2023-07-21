@@ -24,7 +24,7 @@ export
     isnonemptypartof,
     isnonzero
 
-using AsType
+using TypeUtils
 using Base: tail, @propagate_inbounds
 
 import Base:
