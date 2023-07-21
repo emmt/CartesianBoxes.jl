@@ -14,3 +14,6 @@ lib*.a
 # Temporary directories:
 temp/
 tmp/
+
+# Others:
+Manifest.toml
