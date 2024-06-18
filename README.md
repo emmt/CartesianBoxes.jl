@@ -1,4 +1,4 @@
-# Flexible and efficicient multi-dimensional index boxes in Julia
+# Flexible and efficient multi-dimensional index boxes in Julia
 
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Build Status](https://github.com/emmt/CartesianBoxes.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/emmt/CartesianBoxes.jl/actions/workflows/CI.yml?query=branch%3Amaster)
